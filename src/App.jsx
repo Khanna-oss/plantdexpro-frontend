@@ -1,46 +1,63 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from 'react'
+import Header from './components/Header'
+import ImageUploader from './components/ImageUploader'
+import ResultsDisplay from './components/ResultsDisplay'
+import Footer from './components/Footer'
 
-const BACKEND_API_URL = import.meta.env.VITE_API_URL || "https://plantdexpro-backend.onrender.com";
+const BACKEND = import.meta.env.VITE_API_URL || 'https://plantdexpro-backend.onrender.com'
 
-export default function App() {
-  const [health, setHealth] = useState(null);
-  const [err, setErr] = useState(null);
+export default function App(){
+  const [isLoading, setIsLoading] = useState(false)
+  const [results, setResults] = useState(null)
+  const [error, setError] = useState(null)
+  const [imageDataUrl, setImageDataUrl] = useState(null)
 
-  useEffect(() => {
-    async function check() {
-      try {
-        const resp = await fetch(`${BACKEND_API_URL}/health`);
-        const data = await resp.json();
-        setHealth(data);
-      } catch (e) {
-        setErr(String(e));
+  async function identifyImage(file){
+    setError(null)
+    setResults(null)
+    setIsLoading(true)
+
+    try {
+      // if you want to send to backend, send base64 or multipart
+      const form = new FormData()
+      form.append('image', file)
+
+      const res = await fetch(`${BACKEND}/api/identify-plant`, {
+        method: 'POST',
+        body: form
+      })
+
+      if (!res.ok){
+        const txt = await res.text()
+        throw new Error(txt || 'Server returned error')
       }
+
+      const data = await res.json()
+      // expected shape: { plants: [...] }
+      setResults(data.plants ?? data)
+    } catch (e){
+      setError(String(e))
+    } finally {
+      setIsLoading(false)
     }
-    check();
-  }, []);
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-6">
-      <header className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold mb-4">PlantDexPro — Frontend (local)</h1>
-      </header>
-
-      <main className="max-w-3xl mx-auto space-y-4">
-        <section className="p-4 bg-white dark:bg-gray-800 rounded shadow">
-          <h2 className="text-xl font-semibold">Backend health</h2>
-          {health ? (
-            <pre className="mt-2 bg-gray-100 dark:bg-gray-900 p-3 rounded">{JSON.stringify(health, null, 2)}</pre>
-          ) : err ? (
-            <div className="mt-2 text-red-500">Error: {err}</div>
-          ) : (
-            <div className="mt-2 text-sm">Checking backend…</div>
-          )}
-        </section>
-
-        <section className="p-4 bg-white dark:bg-gray-800 rounded shadow">
-          <p>This is a minimal UI used only to confirm the dev build and backend connectivity. Replace with your full App code once this works.</p>
-        </section>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+      <Header />
+      <main className="max-w-4xl mx-auto p-4 space-y-6">
+        <ImageUploader
+          onPreview={(dataUrl)=>setImageDataUrl(dataUrl)}
+          onIdentify={(file)=>identifyImage(file)}
+        />
+        <ResultsDisplay
+          isLoading={isLoading}
+          results={results}
+          error={error}
+          imagePreview={imageDataUrl}
+        />
       </main>
+      <Footer />
     </div>
-  );
+  )
 }
