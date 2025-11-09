@@ -1,0 +1,8 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Upload, Camera, Sun, Moon, Heart, AlertCircle, CheckCircle, Leaf, ChefHat, Info, Youtube, ExternalLink } from 'lucide-react';
+
+const BACKEND_API_URL = 'https://plantdexpro-backend.onrender.com';
+
+// Copy the rest of the App.jsx code from the plantdex-pro artifact above
+// (Everything from the Header component onwards)
