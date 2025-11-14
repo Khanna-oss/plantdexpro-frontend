@@ -1,28 +1,35 @@
-import React, { useState, useEffect } from 'react'
-import { Sun, Moon } from 'lucide-react'
+import React from 'react';
+import { useDarkMode } from '../hooks/useDarkMode.js';
+import { Sun, Moon } from 'lucide-react';
 
-export default function Header(){
-  const [dark, setDark] = useState(false)
-  useEffect(()=> {
-    if (dark) document.documentElement.classList.add('dark')
-    else document.documentElement.classList.remove('dark')
-  }, [dark])
+export const Header = () => {
+  const [theme, toggleTheme] = useDarkMode();
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-sm py-4 mb-4">
-      <div className="max-w-4xl mx-auto px-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">🌿</span>
-          <h1 className="text-xl font-semibold">PlantDexPro</h1>
+    <header className="py-4 shadow-md bg-white dark:bg-gray-800 border-b dark:border-gray-700">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+        <div className="flex items-center space-x-3">
+           <svg
+            className="w-8 h-8 text-primary dark:text-primary-light"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M12 2L6 22h12L12 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M12 15l-3.5-3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M12 15l3.5-3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M12 22V15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span className="text-xl font-bold text-gray-800 dark:text-white">PlantDexPro</span>
         </div>
         <button
+          onClick={toggleTheme}
+          className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary dark:focus:ring-offset-gray-800"
           aria-label="Toggle dark mode"
-          onClick={()=>setDark(!dark)}
-          className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
         >
-          {dark ? <Sun /> : <Moon />}
+          {theme === 'light' ? <Moon /> : <Sun />}
         </button>
       </div>
     </header>
-  )
-}
+  );
+};

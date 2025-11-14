@@ -1,13 +1,17 @@
-import React from 'react'
+import React from 'react';
 
-export default function Footer(){
+export const Footer = () => {
   return (
-    <footer className="mt-8 py-6 text-center text-sm text-gray-500">
-      <div>Disclaimer: This app is for informational purposes only. Always consult a professional expert before consuming any plant.</div>
-      <div className="mt-2 space-x-4">
-        <a className="underline" href="/terms">Terms of Use</a>
-        <a className="underline" href="/privacy">Privacy Policy</a>
+    <footer className="py-8 text-center text-sm text-gray-500 dark:text-gray-400 border-t dark:border-gray-800 bg-white dark:bg-gray-800">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <p>Disclaimer: This app is for informational purposes only. Always consult a professional expert before consuming any plant.</p>
+        <div className="mt-4 space-x-6">
+          <a href="#" className="hover:underline">Terms of Use</a>
+          <span>&bull;</span>
+          <a href="#" className="hover:underline">Privacy Policy</a>
+        </div>
+        <p className="mt-4">&copy; {new Date().getFullYear()} PlantDexPro. All rights reserved.</p>
       </div>
     </footer>
-  )
-}
+  );
+};

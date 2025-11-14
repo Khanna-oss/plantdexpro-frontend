@@ -1,68 +1,86 @@
-import React, { useRef, useState } from 'react'
-import { UploadCloud, Camera } from 'lucide-react'
+import React, { useState, useCallback, useRef } from 'react';
+import { UploadCloud, X } from 'lucide-react';
 
-export default function ImageUploader({ onPreview, onIdentify }){
-  const inputRef = useRef()
-  const [selectedFile, setSelectedFile] = useState(null)
+export const ImageUploader = ({ onIdentify, isLoading, onClear, onPreview }) => {
+  const [selectedFile, setSelectedFile] = useState(null);
+  const fileInputRef = useRef(null);
 
-  function handleFile(f){
-    if (!f) return
-    setSelectedFile(f)
-    const reader = new FileReader()
-    reader.onload = ()=> {
-      onPreview && onPreview(reader.result)
+  const handleFile = useCallback((file) => {
+    if (file && file.type.startsWith('image/')) {
+      setSelectedFile(file);
+      const previewUrl = URL.createObjectURL(file);
+      onPreview(previewUrl);
+      onClear();
+    } else if (file) {
+      alert('Please select a valid image file (PNG, JPG, JPEG).');
     }
-    reader.readAsDataURL(f)
-  }
+  }, [onClear, onPreview]);
+
+  const onFileInputChange = (e) => {
+    handleFile(e.target.files ? e.target.files[0] : null);
+  };
+  
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleFile(e.dataTransfer.files ? e.dataTransfer.files[0] : null);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleIdentifyClick = () => {
+    if (selectedFile) {
+      onIdentify(selectedFile);
+    }
+  };
+  
+  const handleClearClick = () => {
+    setSelectedFile(null);
+    onPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    onClear();
+  };
 
   return (
-    <section className="bg-white dark:bg-gray-800 p-4 rounded shadow">
-      <label className="block">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-medium">Upload Image</h2>
-          <div className="text-sm text-gray-500">Accepts PNG, JPG, WEBP</div>
-        </div>
+    <div className="w-full p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+      {!selectedFile ? (
         <div
-          onClick={()=>inputRef.current.click()}
-          className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded p-6 text-center cursor-pointer hover:border-gray-400"
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+          onClick={() => fileInputRef.current?.click()}
         >
-          <UploadCloud className="mx-auto" />
-          <div className="mt-2">Drag & drop or click to select an image</div>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            className="hidden"
-            onChange={(e)=> handleFile(e.target.files?.[0])}
-            aria-label="Upload image file"
-          />
-        </div>
-
-        {selectedFile && (
-          <div className="mt-4 flex gap-3 items-center">
-            <img
-              src={URL.createObjectURL(selectedFile)}
-              alt="preview"
-              className="h-28 w-28 object-cover rounded-md shadow-sm"
-            />
-            <div className="flex-1">
-              <div className="font-medium">{selectedFile.name}</div>
-              <div className="text-sm text-gray-500">{(selectedFile.size/1024).toFixed(0)} KB</div>
-              <div className="mt-2 flex gap-2">
-                <button
-                  onClick={()=> onIdentify(selectedFile)}
-                  className="px-3 py-1 bg-primary text-white rounded"
-                  aria-label="Start Identification"
-                >Start Identification</button>
-                <button
-                  onClick={()=> { setSelectedFile(null); onPreview && onPreview(null) }}
-                  className="px-3 py-1 border rounded"
-                >Remove</button>
-              </div>
-            </div>
+          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+            <UploadCloud className="w-10 h-10 mb-3 text-gray-400" />
+            <p className="mb-2 text-sm text-gray-500 dark:text-gray-400"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, or JPEG</p>
           </div>
-        )}
-      </label>
-    </section>
-  )
-}
+          <input ref={fileInputRef} id="dropzone-file" type="file" className="hidden" accept="image/png, image/jpeg, image/jpg" onChange={onFileInputChange} />
+        </div>
+      ) : (
+        <div className="text-center relative">
+          <img src={URL.createObjectURL(selectedFile)} alt="Plant preview" className="mx-auto max-h-64 rounded-lg shadow-md" />
+           <button onClick={handleClearClick} className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-colors" aria-label="Remove image">
+             <X size={16} />
+           </button>
+        </div>
+      )}
+      
+      <div className="mt-6 flex flex-col sm:flex-row justify-center gap-4">
+        <button
+          onClick={handleIdentifyClick}
+          disabled={!selectedFile || isLoading}
+          className="w-full sm:w-auto inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-dark dark:focus:ring-offset-gray-800 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+        >
+          <span className="mr-2">🌿</span>
+          {isLoading ? 'Identifying...' : 'Start Identification'}
+        </button>
+      </div>
+    </div>
+  );
+};
