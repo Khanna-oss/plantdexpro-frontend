@@ -1,10 +1,16 @@
-
 export const plantDexService = {
   identifyPlant: async (base64Image) => {
-    // Use environment variable if available (Vercel), otherwise fallback to localhost (Local Dev)
+    // Priority: 
+    // 1. VITE_API_URL (Set in Vercel)
+    // 2. Default to localhost (for local dev)
     const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-    const API_URL = `${baseUrl}/api/identify-plant`;
     
+    // Ensure no double slashes if user added trailing slash
+    const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+    const API_URL = `${cleanBaseUrl}/api/identify-plant`;
+    
+    console.log("🔌 Connecting to API:", API_URL);
+
     try {
       const response = await fetch(API_URL, {
         method: 'POST',
@@ -26,8 +32,7 @@ export const plantDexService = {
     }
   },
   
-  // NOTE: The backend now handles finding videos, so this frontend method is deprecated/unused
-  // but kept for compatibility if referenced elsewhere.
+  // Deprecated: Backend now handles this, but keeping function sig to prevent crashes
   findSpecificRecipes: async (plantName) => {
     return [];
   }
