@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Info, Youtube, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { Heart, Info, Youtube, ShieldAlert, CheckCircle2, Loader2 } from 'lucide-react';
 
 const EdibleBadge = ({ isEdible }) => {
   const bgColor = isEdible ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-red-100 dark:bg-red-900/30';
@@ -43,9 +43,19 @@ const ConfidenceMeter = ({ score }) => {
 
 export const ResultCard = ({ plant, index, originalImage }) => {
   const [isFavorite, setIsFavorite] = React.useState(false);
+  
+  // Image State Handling: 
+  // Start with the API image. If it fails, this state will update to the originalImage.
+  const [currentImage, setCurrentImage] = useState(plant.imageUrl || originalImage);
 
-  // Fallback Logic: If plant.imageUrl (Wiki/API) is missing, use originalImage (User upload)
-  const displayImage = plant.imageUrl || originalImage;
+  // If the backend sends a null image, force original immediately
+  useEffect(() => {
+      if (!plant.imageUrl) {
+          setCurrentImage(originalImage);
+      } else {
+          setCurrentImage(plant.imageUrl);
+      }
+  }, [plant.imageUrl, originalImage]);
 
   const renderList = (items, prefix) => items && items.length > 0 && (
     <ul className="text-sm list-disc list-inside space-y-1">
@@ -60,17 +70,17 @@ export const ResultCard = ({ plant, index, originalImage }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
     >
-      {/* Left Side: Image - Takes 40% width on desktop for full screen feel */}
+      {/* Left Side: Image */}
       <div className="lg:w-2/5 h-72 lg:h-auto bg-gray-100 dark:bg-gray-900 relative overflow-hidden group">
         <img
           className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-700"
-          src={displayImage}
+          src={currentImage}
           alt={`Image of ${plant.commonName}`}
           loading="lazy"
-          onError={(e) => {
-            // Critical Fallback: If Wiki/API image 404s, swap to user upload immediately
-            if (e.currentTarget.src !== originalImage) {
-                e.currentTarget.src = originalImage;
+          onError={() => {
+            // Fallback: If the API image link is dead (404), switch to the user's uploaded photo
+            if (currentImage !== originalImage) {
+                setCurrentImage(originalImage);
             }
           }}
         />
@@ -97,7 +107,7 @@ export const ResultCard = ({ plant, index, originalImage }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-             {/* Edible Parts Box */}
+             {/* Edible Parts */}
              {plant.isEdible && plant.edibleParts && plant.edibleParts.length > 0 && (
                 <div className="bg-emerald-50 dark:bg-emerald-900/10 p-5 rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
                   <h4 className="font-bold text-emerald-800 dark:text-emerald-200 text-sm mb-2 flex items-center gap-2">
@@ -108,7 +118,7 @@ export const ResultCard = ({ plant, index, originalImage }) => {
                 </div>
              )}
 
-             {/* Safety Warnings Box */}
+             {/* Safety Warnings */}
              {((plant.toxicParts && plant.toxicParts.length > 0) || (plant.safetyWarnings && plant.safetyWarnings.length > 0)) && (
                  <div className="bg-red-50 dark:bg-red-900/10 p-5 rounded-2xl border border-red-100 dark:border-red-800/30">
                     <h4 className="font-bold text-red-800 dark:text-red-200 text-sm mb-2 flex items-center gap-2">
@@ -128,44 +138,42 @@ export const ResultCard = ({ plant, index, originalImage }) => {
           </div>
         </div>
 
-        {/* Recipe Section - Always attempts to show if videos exist */}
+        {/* Curated Recipes - Now Robust */}
         {plant.videos && plant.videos.length > 0 ? (
-        <div className="pt-8 border-t border-gray-100 dark:border-gray-700">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5 flex items-center gap-2">
-                <Youtube size={16} className="text-red-600"/> 
-                Curated Recipes
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {plant.videos.map((v, i) => (
-                    <a key={i} href={v.link} target="_blank" rel="noopener noreferrer" className="group block bg-white dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-800 hover:ring-2 hover:ring-emerald-500 transition-all shadow-sm hover:shadow-md">
-                        <div className="aspect-video relative bg-gray-200 dark:bg-gray-800 overflow-hidden">
-                            {v.thumbnail ? (
-                                <img src={v.thumbnail} alt={v.title} className="w-full h-full object-cover opacity-95 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center text-gray-400"><Youtube size={32} /></div>
-                            )}
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
-                                <div className="bg-white/90 rounded-full p-3 text-red-600 shadow-lg"><Youtube size={24} fill="currentColor" /></div>
+            <div className="pt-8 border-t border-gray-100 dark:border-gray-700">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5 flex items-center gap-2">
+                    <Youtube size={16} className="text-red-600"/> 
+                    Curated Recipes
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {plant.videos.map((v, i) => (
+                        <a key={i} href={v.link} target="_blank" rel="noopener noreferrer" className="group block bg-white dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-800 hover:ring-2 hover:ring-emerald-500 transition-all shadow-sm hover:shadow-md">
+                            <div className="aspect-video relative bg-gray-200 dark:bg-gray-800 overflow-hidden">
+                                {v.thumbnail ? (
+                                    <img src={v.thumbnail} alt={v.title} className="w-full h-full object-cover opacity-95 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-gray-400"><Youtube size={32} /></div>
+                                )}
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+                                    <div className="bg-white/90 rounded-full p-3 text-red-600 shadow-lg"><Youtube size={24} fill="currentColor" /></div>
+                                </div>
                             </div>
-                        </div>
-                        <div className="p-4">
-                            <p className="text-sm font-bold text-gray-900 dark:text-white line-clamp-2 leading-snug group-hover:text-emerald-600 dark:group-hover:text-emerald-400 mb-1">{v.title}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{v.channel}</p>
-                        </div>
-                    </a>
-                ))}
-            </div>
-        </div>
-        ) : (
-            // Fallback Recipe Button if API didn't return videos
-            plant.isEdible && (
-                <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
-                    <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(plant.commonName)}+recipe`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-red-600 rounded-xl hover:bg-red-700 shadow-md transition-all hover:shadow-lg transform hover:-translate-y-0.5">
-                        <Youtube size={20} /> 
-                        Find Recipes for {plant.commonName}
-                    </a>
+                            <div className="p-4">
+                                <p className="text-sm font-bold text-gray-900 dark:text-white line-clamp-2 leading-snug group-hover:text-emerald-600 dark:group-hover:text-emerald-400 mb-1">{v.title}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{v.channel}</p>
+                            </div>
+                        </a>
+                    ))}
                 </div>
-            )
+            </div>
+        ) : (
+            // Fallback Search Button if API failed to return videos
+            <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
+                 <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(plant.commonName)}+recipe`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-red-600 rounded-xl hover:bg-red-700 shadow-md transition-all hover:shadow-lg transform hover:-translate-y-0.5">
+                    <Youtube size={20} /> 
+                    Find Recipes for {plant.commonName}
+                </a>
+            </div>
         )}
       </div>
     </motion.div>
