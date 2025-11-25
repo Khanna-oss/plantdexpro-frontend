@@ -44,6 +44,9 @@ const ConfidenceMeter = ({ score }) => {
 export const ResultCard = ({ plant, index, originalImage }) => {
   const [isFavorite, setIsFavorite] = React.useState(false);
 
+  // Fallback Logic: If plant.imageUrl (Wiki/API) is missing, use originalImage (User upload)
+  const displayImage = plant.imageUrl || originalImage;
+
   const renderList = (items, prefix) => items && items.length > 0 && (
     <ul className="text-sm list-disc list-inside space-y-1">
       {items.map((item, i) => <li key={i}>{prefix ? `${prefix}: ` : ''}{item}</li>)}
@@ -61,12 +64,14 @@ export const ResultCard = ({ plant, index, originalImage }) => {
       <div className="lg:w-2/5 h-72 lg:h-auto bg-gray-100 dark:bg-gray-900 relative overflow-hidden group">
         <img
           className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-700"
-          src={plant.imageUrl || originalImage}
+          src={displayImage}
           alt={`Image of ${plant.commonName}`}
           loading="lazy"
           onError={(e) => {
-            e.currentTarget.src = originalImage; // Fallback to user upload if API image fails
-            e.currentTarget.onerror = null; 
+            // Critical Fallback: If Wiki/API image 404s, swap to user upload immediately
+            if (e.currentTarget.src !== originalImage) {
+                e.currentTarget.src = originalImage;
+            }
           }}
         />
         <div className="absolute top-4 right-4 lg:hidden">
@@ -123,8 +128,8 @@ export const ResultCard = ({ plant, index, originalImage }) => {
           </div>
         </div>
 
-        {/* Recipe Section - Only shows if backend returned videos */}
-        {plant.videos && plant.videos.length > 0 && (
+        {/* Recipe Section - Always attempts to show if videos exist */}
+        {plant.videos && plant.videos.length > 0 ? (
         <div className="pt-8 border-t border-gray-100 dark:border-gray-700">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5 flex items-center gap-2">
                 <Youtube size={16} className="text-red-600"/> 
@@ -151,6 +156,16 @@ export const ResultCard = ({ plant, index, originalImage }) => {
                 ))}
             </div>
         </div>
+        ) : (
+            // Fallback Recipe Button if API didn't return videos
+            plant.isEdible && (
+                <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
+                    <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(plant.commonName)}+recipe`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-red-600 rounded-xl hover:bg-red-700 shadow-md transition-all hover:shadow-lg transform hover:-translate-y-0.5">
+                        <Youtube size={20} /> 
+                        Find Recipes for {plant.commonName}
+                    </a>
+                </div>
+            )
         )}
       </div>
     </motion.div>
