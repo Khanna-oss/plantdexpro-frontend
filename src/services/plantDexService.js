@@ -1,15 +1,11 @@
 export const plantDexService = {
   identifyPlant: async (base64Image) => {
-    // Priority: 
-    // 1. VITE_API_URL (Set in Vercel)
-    // 2. Default to localhost (for local dev)
+    // Production URL from Vercel Env, or localhost fallback
     const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-    
-    // Ensure no double slashes if user added trailing slash
-    const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+    const cleanBaseUrl = baseUrl.replace(/\/$/, ''); // remove trailing slash if present
     const API_URL = `${cleanBaseUrl}/api/identify-plant`;
     
-    console.log("🔌 Connecting to API:", API_URL);
+    console.log("🔌 Connecting to:", API_URL);
 
     try {
       const response = await fetch(API_URL, {
@@ -32,7 +28,7 @@ export const plantDexService = {
     }
   },
   
-  // Deprecated: Backend now handles this, but keeping function sig to prevent crashes
+  // Helper retained for compatibility
   findSpecificRecipes: async (plantName) => {
     return [];
   }

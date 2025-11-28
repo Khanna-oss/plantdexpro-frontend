@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Info, Youtube, ShieldAlert, CheckCircle2, Loader2 } from 'lucide-react';
+import { Heart, Info, Youtube, ShieldAlert, CheckCircle2, Leaf, Sparkles } from 'lucide-react';
 
 const EdibleBadge = ({ isEdible }) => {
-  const bgColor = isEdible ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-red-100 dark:bg-red-900/30';
-  const textColor = isEdible ? 'text-emerald-800 dark:text-emerald-300' : 'text-red-800 dark:text-red-300';
-  const borderColor = isEdible ? 'border-emerald-200 dark:border-emerald-800' : 'border-red-200 dark:border-red-800';
+  const bgColor = isEdible ? 'bg-emerald-100 dark:bg-emerald-900/40' : 'bg-rose-100 dark:bg-rose-900/40';
+  const textColor = isEdible ? 'text-emerald-700 dark:text-emerald-200' : 'text-rose-700 dark:text-rose-200';
+  const borderColor = isEdible ? 'border-emerald-200 dark:border-emerald-700' : 'border-rose-200 dark:border-rose-700';
   const text = isEdible ? 'Edible' : 'Not Edible';
   const Icon = isEdible ? CheckCircle2 : ShieldAlert;
 
   return (
-    <span className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold border ${bgColor} ${textColor} ${borderColor}`}>
+    <span className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold border ${bgColor} ${textColor} ${borderColor} shadow-sm`}>
       <Icon size={16} />
       {text}
     </span>
@@ -19,22 +19,24 @@ const EdibleBadge = ({ isEdible }) => {
 
 const ConfidenceMeter = ({ score }) => {
     const percentage = Math.round(score * 100);
-    let barColor = 'bg-red-500';
-    if (percentage > 50) barColor = 'bg-yellow-500';
+    let barColor = 'bg-rose-500';
+    if (percentage > 50) barColor = 'bg-amber-500';
     if (percentage > 80) barColor = 'bg-emerald-500';
 
     return (
         <div className="w-full">
             <div className="flex justify-between mb-2">
-                <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">AI Match</span>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                    <Sparkles size={12} /> AI Match
+                </span>
                 <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{percentage}%</span>
             </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                 <motion.div
-                  className={`${barColor} h-2.5 rounded-full shadow-sm`}
+                  className={`${barColor} h-2 rounded-full shadow-sm`}
                   initial={{ width: 0 }}
                   animate={{ width: `${percentage}%` }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
+                  transition={{ duration: 1, ease: "circOut" }}
                 />
             </div>
         </div>
@@ -43,138 +45,149 @@ const ConfidenceMeter = ({ score }) => {
 
 export const ResultCard = ({ plant, index, originalImage }) => {
   const [isFavorite, setIsFavorite] = React.useState(false);
-  
-  // Image State Handling: 
-  // Start with the API image. If it fails, this state will update to the originalImage.
   const [currentImage, setCurrentImage] = useState(plant.imageUrl || originalImage);
+  const [imgError, setImgError] = useState(false);
 
-  // If the backend sends a null image, force original immediately
   useEffect(() => {
-      if (!plant.imageUrl) {
-          setCurrentImage(originalImage);
-      } else {
-          setCurrentImage(plant.imageUrl);
-      }
+      // Reset when plant changes
+      setCurrentImage(plant.imageUrl || originalImage);
+      setImgError(false);
   }, [plant.imageUrl, originalImage]);
 
-  const renderList = (items, prefix) => items && items.length > 0 && (
-    <ul className="text-sm list-disc list-inside space-y-1">
-      {items.map((item, i) => <li key={i}>{prefix ? `${prefix}: ` : ''}{item}</li>)}
+  const renderList = (items) => items && items.length > 0 && (
+    <ul className="text-sm space-y-1 mt-2">
+      {items.map((item, i) => (
+        <li key={i} className="flex items-start gap-2">
+            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-current opacity-60 shrink-0"></span>
+            <span className="leading-relaxed">{item}</span>
+        </li>
+      ))}
     </ul>
   );
 
   return (
     <motion.div
-      className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700 flex flex-col lg:flex-row w-full"
+      className="group relative bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800 flex flex-col lg:flex-row w-full"
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
+      transition={{ duration: 0.6, delay: index * 0.1, ease: "easeOut" }}
     >
-      {/* Left Side: Image */}
-      <div className="lg:w-2/5 h-72 lg:h-auto bg-gray-100 dark:bg-gray-900 relative overflow-hidden group">
+      {/* Left Side: Immersive Image */}
+      <div className="lg:w-[45%] h-80 lg:h-auto bg-gray-100 dark:bg-gray-800 relative overflow-hidden">
         <img
-          className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-700"
-          src={currentImage}
+          className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+          src={imgError ? originalImage : currentImage}
           alt={`Image of ${plant.commonName}`}
           loading="lazy"
-          onError={() => {
-            // Fallback: If the API image link is dead (404), switch to the user's uploaded photo
-            if (currentImage !== originalImage) {
-                setCurrentImage(originalImage);
-            }
-          }}
+          onError={() => setImgError(true)}
         />
-        <div className="absolute top-4 right-4 lg:hidden">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-black/5"></div>
+        
+        <div className="absolute top-6 right-6 lg:hidden">
            <EdibleBadge isEdible={plant.isEdible} />
+        </div>
+        
+        {/* Image Source Label */}
+        <div className="absolute bottom-4 left-4 px-3 py-1 bg-black/50 backdrop-blur-md rounded-full text-[10px] text-white/80 uppercase tracking-wider font-medium">
+            {imgError ? 'Your Upload' : 'Reference Image'}
         </div>
       </div>
       
-      {/* Right Side: Content */}
-      <div className="p-6 md:p-8 lg:p-10 flex-grow flex flex-col justify-between">
+      {/* Right Side: Intelligent Content */}
+      <div className="p-8 lg:p-12 flex-grow flex flex-col justify-between bg-white dark:bg-gray-900">
         <div>
           <div className="flex justify-between items-start mb-6">
             <div>
-              <div className="uppercase tracking-widest text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-2">{plant.scientificName}</div>
-              <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-none">{plant.commonName}</h2>
+              <div className="flex items-center gap-2 mb-3">
+                 <span className="px-3 py-1 rounded-md bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold uppercase tracking-wider border border-emerald-100 dark:border-emerald-800/50">
+                    {plant.scientificName}
+                 </span>
+              </div>
+              <h2 className="text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-[1.1] mb-2">
+                {plant.commonName}
+              </h2>
             </div>
-            <div className="hidden lg:block transform scale-110 origin-top-right">
+            <div className="hidden lg:block">
                 <EdibleBadge isEdible={plant.isEdible} />
             </div>
           </div>
 
-          <div className="prose dark:prose-invert max-w-none mb-8">
-             <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed">{plant.description}</p>
+          <div className="prose dark:prose-invert max-w-none mb-10">
+             <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed font-medium">
+                {plant.description}
+             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-             {/* Edible Parts */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+             {/* Edible Parts Card */}
              {plant.isEdible && plant.edibleParts && plant.edibleParts.length > 0 && (
-                <div className="bg-emerald-50 dark:bg-emerald-900/10 p-5 rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
-                  <h4 className="font-bold text-emerald-800 dark:text-emerald-200 text-sm mb-2 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-6 rounded-2xl border border-emerald-100 dark:border-emerald-800/30 transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
+                  <h4 className="font-bold text-emerald-800 dark:text-emerald-200 text-sm mb-3 flex items-center gap-2">
+                    <Leaf size={16} />
                     Edible Parts
                   </h4>
-                  <p className="text-emerald-700 dark:text-emerald-300 font-medium">{plant.edibleParts.join(', ')}</p>
+                  <p className="text-emerald-700 dark:text-emerald-300 font-medium leading-relaxed">
+                    {plant.edibleParts.join(', ')}
+                  </p>
                 </div>
              )}
 
-             {/* Safety Warnings */}
+             {/* Safety Warnings Card */}
              {((plant.toxicParts && plant.toxicParts.length > 0) || (plant.safetyWarnings && plant.safetyWarnings.length > 0)) && (
-                 <div className="bg-red-50 dark:bg-red-900/10 p-5 rounded-2xl border border-red-100 dark:border-red-800/30">
-                    <h4 className="font-bold text-red-800 dark:text-red-200 text-sm mb-2 flex items-center gap-2">
-                        <ShieldAlert size={18} /> 
-                        Safety Warnings
+                 <div className="bg-rose-50/50 dark:bg-rose-900/10 p-6 rounded-2xl border border-rose-100 dark:border-rose-800/30 transition-colors hover:bg-rose-50 dark:hover:bg-rose-900/20">
+                    <h4 className="font-bold text-rose-800 dark:text-rose-200 text-sm mb-3 flex items-center gap-2">
+                        <ShieldAlert size={16} /> 
+                        Safety & Toxicity
                     </h4>
-                    <div className="text-red-700 dark:text-red-300 font-medium">
-                        {renderList(plant.toxicParts, "Toxic")}
+                    <div className="text-rose-700 dark:text-rose-300 font-medium">
+                        {renderList(plant.toxicParts)}
                         {renderList(plant.safetyWarnings)}
                     </div>
                  </div>
              )}
           </div>
-
-          <div className="mb-8 max-w-xs">
-            <ConfidenceMeter score={plant.confidenceScore} />
-          </div>
         </div>
 
-        {/* Curated Recipes - Now Robust */}
-        {plant.videos && plant.videos.length > 0 ? (
-            <div className="pt-8 border-t border-gray-100 dark:border-gray-700">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5 flex items-center gap-2">
-                    <Youtube size={16} className="text-red-600"/> 
-                    Curated Recipes
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {plant.videos.map((v, i) => (
-                        <a key={i} href={v.link} target="_blank" rel="noopener noreferrer" className="group block bg-white dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-800 hover:ring-2 hover:ring-emerald-500 transition-all shadow-sm hover:shadow-md">
-                            <div className="aspect-video relative bg-gray-200 dark:bg-gray-800 overflow-hidden">
-                                {v.thumbnail ? (
-                                    <img src={v.thumbnail} alt={v.title} className="w-full h-full object-cover opacity-95 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-400"><Youtube size={32} /></div>
-                                )}
-                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
-                                    <div className="bg-white/90 rounded-full p-3 text-red-600 shadow-lg"><Youtube size={24} fill="currentColor" /></div>
+        <div className="space-y-8">
+            <div className="max-w-xs">
+                <ConfidenceMeter score={plant.confidenceScore} />
+            </div>
+
+            {/* Dynamic Video Section */}
+            {plant.videos && plant.videos.length > 0 ? (
+                <div className="pt-8 border-t border-gray-100 dark:border-gray-800">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                        <Youtube size={16} className="text-red-600"/> 
+                        {plant.videoContext === 'recipes' ? 'Curated Recipes' : 'Beneficial Uses & Care'}
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {plant.videos.map((v, i) => (
+                            <a key={i} href={v.link} target="_blank" rel="noopener noreferrer" className="group/video relative bg-gray-100 dark:bg-gray-800/50 rounded-xl overflow-hidden hover:ring-2 hover:ring-offset-2 hover:ring-emerald-500 dark:ring-offset-gray-900 transition-all">
+                                <div className="aspect-video relative overflow-hidden">
+                                    <img src={v.thumbnail} alt={v.title} className="w-full h-full object-cover opacity-90 group-hover/video:opacity-100 group-hover/video:scale-110 transition-all duration-700" />
+                                    <div className="absolute inset-0 bg-black/10 group-hover/video:bg-black/0 transition-colors"></div>
+                                    <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded">
+                                        Video
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="p-4">
-                                <p className="text-sm font-bold text-gray-900 dark:text-white line-clamp-2 leading-snug group-hover:text-emerald-600 dark:group-hover:text-emerald-400 mb-1">{v.title}</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{v.channel}</p>
-                            </div>
-                        </a>
-                    ))}
+                                <div className="p-3">
+                                    <p className="text-sm font-bold text-gray-900 dark:text-white line-clamp-2 leading-tight mb-1">{v.title}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">{v.channel}</p>
+                                </div>
+                            </a>
+                        ))}
+                    </div>
                 </div>
-            </div>
-        ) : (
-            // Fallback Search Button if API failed to return videos
-            <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
-                 <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(plant.commonName)}+recipe`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-red-600 rounded-xl hover:bg-red-700 shadow-md transition-all hover:shadow-lg transform hover:-translate-y-0.5">
-                    <Youtube size={20} /> 
-                    Find Recipes for {plant.commonName}
-                </a>
-            </div>
-        )}
+            ) : (
+                // Smart Fallback Button
+                <div className="pt-6 border-t border-gray-100 dark:border-gray-800 flex justify-start">
+                     <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(plant.commonName)}+${plant.isEdible ? 'recipe' : 'benefits'}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-gradient-to-r from-red-600 to-red-500 rounded-xl hover:from-red-500 hover:to-red-400 shadow-lg shadow-red-500/20 transition-all hover:-translate-y-0.5">
+                        <Youtube size={20} /> 
+                        Watch Videos on YouTube
+                    </a>
+                </div>
+            )}
+        </div>
       </div>
     </motion.div>
   );

@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -46,7 +45,7 @@ const App = () => {
       }
     } catch (e) {
       console.error(e);
-      const errorMessage = e.message || 'An unknown error occurred. Is the backend running?';
+      const errorMessage = e.message || 'An unknown error occurred.';
       setError(`Failed to identify plant. ${errorMessage}`);
     } finally {
       setIsLoading(false);
@@ -63,17 +62,18 @@ const App = () => {
     <div className={`min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300 ${theme}`}>
       <Header theme={theme} toggleTheme={toggleTheme} />
       
-      <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-        <div className="max-w-4xl mx-auto text-center mb-8 md:mb-12">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight">
+      {/* Full width container for immersive feel */}
+      <main className="flex-grow w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <div className="max-w-4xl mx-auto text-center mb-12">
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight mb-6">
             PlantDexPro
           </h1>
-          <p className="mt-4 text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Identify plants instantly with AI. Get care tips, safety warnings, and delicious recipes.
+          <p className="text-lg md:text-2xl text-gray-600 dark:text-gray-300 font-medium max-w-2xl mx-auto">
+            Identify plants instantly. Unlock recipes, safety tips, and care guides with AI.
           </p>
         </div>
 
-        <div className="max-w-3xl mx-auto relative z-10">
+        <div className="max-w-2xl mx-auto relative z-10 mb-16">
           <ImageUploader 
             onIdentify={handleIdentify} 
             isLoading={isLoading} 
@@ -83,7 +83,7 @@ const App = () => {
         </div>
 
         {isLoading && (
-           <div className="mt-16 flex justify-center">
+           <div className="flex justify-center py-12">
              <Spinner />
            </div>
         )}
@@ -92,7 +92,7 @@ const App = () => {
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-10 max-w-2xl mx-auto text-center bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 px-6 py-4 rounded-xl shadow-sm flex items-center justify-center gap-3" 
+            className="max-w-2xl mx-auto text-center bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 px-6 py-4 rounded-xl shadow-sm flex items-center justify-center gap-3" 
             role="alert"
           >
             <XCircle className="w-6 h-6 shrink-0" />
@@ -101,7 +101,7 @@ const App = () => {
         )}
 
         {!isLoading && results.length > 0 && (
-          <div className="mt-16 w-full animate-fade-in-up">
+          <div className="w-full animate-fade-in-up">
             <ResultsDisplay results={results} imagePreview={imagePreview} />
           </div>
         )}
