@@ -10,10 +10,11 @@ const hashString = (str) => {
   return hash;
 };
 
+const CACHE_KEY_HISTORY = 'plant_dex_history';
+
 export const plantDexService = {
   identifyPlant: async (base64Image) => {
     // 1. CACHE CHECK (The "Self-Learning" Feature)
-    // Create a unique fingerprint for this image based on first 1000 chars (speed)
     const imageHash = hashString(base64Image.substring(0, 1000)); 
     const cacheKey = `plant_dex_cache_${imageHash}`;
     
@@ -24,6 +25,7 @@ export const plantDexService = {
     }
 
     // 2. API REQUEST
+    // Priority: VITE_API_URL (Vercel) -> localhost (Dev)
     const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
     const cleanBaseUrl = baseUrl.replace(/\/$/, '');
     const API_URL = `${cleanBaseUrl}/api/identify-plant`;
@@ -42,13 +44,26 @@ export const plantDexService = {
 
       const data = await response.json();
       
-      // 3. CACHE SAVE
-      // Store successful results for future lightning load
+      // 3. CACHE SAVE & HISTORY UPDATE
       if (data.plants && data.plants.length > 0) {
         try {
+          // Save specific result cache
           localStorage.setItem(cacheKey, JSON.stringify(data));
+          
+          // Update History
+          const history = JSON.parse(localStorage.getItem(CACHE_KEY_HISTORY) || '[]');
+          const newEntry = {
+            id: data.plants[0].id,
+            name: data.plants[0].commonName,
+            image: data.plants[0].imageUrl || data.plants[0].youtubeImage, // Save a valid URL
+            date: new Date().toLocaleDateString()
+          };
+          
+          // Add to top, remove duplicates, keep max 10
+          const updatedHistory = [newEntry, ...history.filter(h => h.name !== newEntry.name)].slice(0, 10);
+          localStorage.setItem(CACHE_KEY_HISTORY, JSON.stringify(updatedHistory));
+          
         } catch (e) {
-          // If cache is full, clear old entries or ignore
           console.warn("Cache full or disabled");
         }
       }
@@ -60,5 +75,11 @@ export const plantDexService = {
     }
   },
   
-  findSpecificRecipes: async (plantName) => { return []; }
+  getHistory: () => {
+    try {
+      return JSON.parse(localStorage.getItem(CACHE_KEY_HISTORY) || '[]');
+    } catch {
+      return [];
+    }
+  }
 };

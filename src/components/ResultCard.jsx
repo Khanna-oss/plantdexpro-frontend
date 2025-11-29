@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Info, Youtube, ShieldAlert, CheckCircle2, Leaf, Sparkles, Stethoscope, ImageOff } from 'lucide-react';
+import { Heart, Youtube, ShieldAlert, CheckCircle2, Leaf, Sparkles, Stethoscope, ImageOff, Share2, Lightbulb } from 'lucide-react';
 
 const EdibleBadge = ({ isEdible }) => {
   const bgColor = isEdible ? 'bg-emerald-100 dark:bg-emerald-900/40' : 'bg-rose-100 dark:bg-rose-900/40';
@@ -53,7 +53,6 @@ export const ResultCard = ({ plant, index, originalImage }) => {
 
   useEffect(() => {
       // Reset whenever plant changes
-      // Priority: Wiki > YouTube > API > Original
       if (plant.imageUrl) {
           setImgSrc(plant.imageUrl);
           setFallbackLevel(1);
@@ -70,7 +69,7 @@ export const ResultCard = ({ plant, index, originalImage }) => {
   }, [plant, originalImage]);
 
   const handleImageError = () => {
-      // Progressive degradation: If current fails, try next available
+      // Progressive degradation
       if (fallbackLevel === 1 && plant.youtubeImage) {
           setImgSrc(plant.youtubeImage);
           setFallbackLevel(2);
@@ -80,6 +79,18 @@ export const ResultCard = ({ plant, index, originalImage }) => {
       } else {
           setImgSrc(originalImage);
           setFallbackLevel(4);
+      }
+  };
+
+  const handleShare = () => {
+      if (navigator.share) {
+          navigator.share({
+              title: `I found ${plant.commonName}!`,
+              text: `Check out this plant I identified with PlantDexPro: ${plant.commonName}. ${plant.description}`,
+              url: window.location.href
+          });
+      } else {
+          alert("Share not supported on this browser");
       }
   };
 
@@ -96,16 +107,15 @@ export const ResultCard = ({ plant, index, originalImage }) => {
 
   return (
     <motion.div
-      className="group relative bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800 w-full max-w-6xl mx-auto"
+      className="group relative bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800 w-full max-w-7xl mx-auto"
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: index * 0.1, ease: "easeOut" }}
     >
-      {/* LAYOUT FIX: CSS Grid. Image 50% width on desktop. */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 h-full">
+      <div className="grid grid-cols-1 lg:grid-cols-12 h-full">
         
-        {/* IMAGE SECTION */}
-        <div className="relative bg-gray-100 dark:bg-black h-80 lg:h-auto overflow-hidden">
+        {/* IMAGE SECTION: 16:9 Landscape feel on desktop */}
+        <div className="lg:col-span-5 bg-gray-100 dark:bg-black relative h-80 lg:h-auto overflow-hidden">
           <img
             className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
             src={imgSrc}
@@ -113,43 +123,62 @@ export const ResultCard = ({ plant, index, originalImage }) => {
             loading="lazy"
             onError={handleImageError}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent lg:hidden"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent lg:hidden"></div>
           
-          <div className="absolute top-6 right-6 lg:hidden">
+          <div className="absolute top-4 right-4 lg:hidden">
              <EdibleBadge isEdible={plant.isEdible} />
           </div>
           
+          {/* Mobile Title Overlay */}
+          <div className="absolute bottom-4 left-4 lg:hidden text-white">
+             <h2 className="text-3xl font-bold shadow-black drop-shadow-md">{plant.commonName}</h2>
+          </div>
+          
           {/* Source Label */}
-          <div className="absolute bottom-4 left-4 px-3 py-1 bg-black/50 backdrop-blur-md rounded-full text-[10px] text-white/90 uppercase tracking-wider font-bold flex items-center gap-1.5">
-             {fallbackLevel === 1 && <span>Wikipedia Image</span>}
-             {fallbackLevel === 2 && <span className="flex items-center gap-1"><Youtube size={10}/> Video Thumbnail</span>}
-             {fallbackLevel === 3 && <span>Database Image</span>}
-             {fallbackLevel === 4 && <span className="flex items-center gap-1"><ImageOff size={10}/> Your Photo</span>}
+          <div className="absolute top-4 left-4 px-3 py-1 bg-black/50 backdrop-blur-md rounded-full text-[10px] text-white/90 uppercase tracking-wider font-bold flex items-center gap-1.5 border border-white/10">
+             {fallbackLevel === 1 && <span>Wikipedia</span>}
+             {fallbackLevel === 2 && <span>YouTube</span>}
+             {fallbackLevel === 3 && <span>Database</span>}
+             {fallbackLevel === 4 && <span>Your Photo</span>}
           </div>
         </div>
         
         {/* CONTENT SECTION */}
-        <div className="p-8 lg:p-12 flex flex-col justify-between bg-white dark:bg-gray-900">
+        <div className="lg:col-span-7 p-6 md:p-10 flex flex-col justify-between bg-white dark:bg-gray-900">
           <div>
             <div className="flex justify-between items-start mb-6">
-              <div>
+              <div className="hidden lg:block">
                 <span className="px-3 py-1 rounded-md bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold uppercase tracking-wider border border-emerald-100 dark:border-emerald-800/50 mb-3 inline-block">
                    {plant.scientificName}
                 </span>
-                <h2 className="text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-[1.1]">
+                <h2 className="text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-[1.1]">
                   {plant.commonName}
                 </h2>
               </div>
-              <div className="hidden lg:block transform scale-110">
+              <div className="hidden lg:flex gap-3">
+                  <button onClick={handleShare} className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                      <Share2 size={20} />
+                  </button>
                   <EdibleBadge isEdible={plant.isEdible} />
               </div>
             </div>
 
-            <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-8 font-medium">
+            <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-6 font-medium">
                 {plant.description}
             </p>
+            
+            {plant.funFact && (
+                <div className="mb-8 flex gap-3 items-start bg-amber-50 dark:bg-amber-900/10 p-4 rounded-xl border border-amber-100 dark:border-amber-800/30">
+                    <Lightbulb className="text-amber-500 shrink-0 mt-1" size={20} />
+                    <div>
+                        <h4 className="font-bold text-amber-800 dark:text-amber-200 text-xs uppercase tracking-wide mb-1">Did You Know?</h4>
+                        <p className="text-amber-900 dark:text-amber-100 text-sm italic">{plant.funFact}</p>
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
+               {/* Dynamic Info Box */}
                {plant.isEdible ? (
                   <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-5 rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
                     <h4 className="font-bold text-emerald-800 dark:text-emerald-200 text-xs uppercase tracking-wide mb-2 flex items-center gap-2">

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { ImageUploader } from './components/ImageUploader';
@@ -7,7 +7,7 @@ import { Spinner } from './components/Spinner';
 import { useDarkMode } from './hooks/useDarkMode.js';
 import { plantDexService } from './services/plantDexService.js';
 import { motion } from 'framer-motion';
-import { XCircle } from 'lucide-react';
+import { XCircle, History } from 'lucide-react';
 
 const ERROR_RHYMES = [
   "Oh no! The photo's a blur, I can't be sure. Try steady hands for a cure!",
@@ -23,6 +23,11 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [history, setHistory] = useState([]);
+
+  useEffect(() => {
+    setHistory(plantDexService.getHistory());
+  }, [results]); // Update history when new results come in
 
   const fileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
@@ -40,7 +45,6 @@ const App = () => {
 
     try {
       const base64Image = await fileToBase64(file);
-      // Using the service which now includes caching!
       const data = await plantDexService.identifyPlant(base64Image);
       
       if (data.error) throw new Error(data.error);
@@ -51,7 +55,6 @@ const App = () => {
       }
     } catch (e) {
       console.error(e);
-      // Pick a random witty rhyme
       const randomRhyme = ERROR_RHYMES[Math.floor(Math.random() * ERROR_RHYMES.length)];
       setError(randomRhyme);
     } finally {
@@ -68,11 +71,9 @@ const App = () => {
   return (
     <div className={`min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300 ${theme}`}>
       <Header theme={theme} toggleTheme={toggleTheme} />
-      
-      {/* Updated Container: Uses almost full width (max-w-[1600px]) for a widescreen feel */}
       <main className="flex-grow w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <div className="max-w-4xl mx-auto text-center mb-12">
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight mb-6">
+          <h1 className="text-5xl md:text-7xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight mb-6">
             PlantDexPro
           </h1>
           <p className="text-lg md:text-2xl text-gray-600 dark:text-gray-300 font-medium max-w-2xl mx-auto">
@@ -112,6 +113,29 @@ const App = () => {
             <ResultsDisplay results={results} imagePreview={imagePreview} />
           </div>
         )}
+
+        {/* History Section */}
+        {!isLoading && results.length === 0 && history.length > 0 && (
+          <div className="max-w-5xl mx-auto mt-12">
+            <div className="flex items-center gap-2 mb-4 text-gray-400 uppercase text-xs font-bold tracking-widest">
+               <History size={14} /> Recent Discoveries
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+               {history.map((item, i) => (
+                  <div key={i} className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 opacity-75 hover:opacity-100 transition-opacity">
+                      <div className="h-24 bg-gray-200 relative">
+                         {item.image && <img src={item.image} className="w-full h-full object-cover" alt={item.name} />}
+                      </div>
+                      <div className="p-3">
+                         <p className="font-bold text-sm truncate">{item.name}</p>
+                         <p className="text-xs text-gray-500">{item.date}</p>
+                      </div>
+                  </div>
+               ))}
+            </div>
+          </div>
+        )}
+
       </main>
       <Footer />
     </div>
