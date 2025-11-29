@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -9,6 +8,14 @@ import { useDarkMode } from './hooks/useDarkMode.js';
 import { plantDexService } from './services/plantDexService.js';
 import { motion } from 'framer-motion';
 import { XCircle } from 'lucide-react';
+
+const ERROR_RHYMES = [
+  "Oh no! The photo's a blur, I can't be sure. Try steady hands for a cure!",
+  "This leaf is a mystery, it's hidden you see. Snap a clear one for me!",
+  "Too dark to spark a thought in my brain. Please try the camera again!",
+  "I'm stumped by this view, it's sad but true. A closer shot is overdue.",
+  "My AI eyes are feeling weak, that image quality is quite bleak."
+];
 
 const App = () => {
   const [theme, toggleTheme] = useDarkMode();
@@ -21,10 +28,7 @@ const App = () => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
-      reader.onload = () => {
-         const result = reader.result;
-         resolve(result.split(',')[1]);
-      };
+      reader.onload = () => resolve(reader.result.split(',')[1]);
       reader.onerror = (error) => reject(error);
     });
   };
@@ -36,18 +40,20 @@ const App = () => {
 
     try {
       const base64Image = await fileToBase64(file);
+      // Using the service which now includes caching!
       const data = await plantDexService.identifyPlant(base64Image);
       
       if (data.error) throw new Error(data.error);
       
       setResults(data.plants || []);
       if (!data.plants || data.plants.length === 0) {
-        setError("Could not identify any plants. Please try another image.");
+        setError("I searched high and low, but this plant I do not know.");
       }
     } catch (e) {
       console.error(e);
-      const errorMessage = e.message || 'An unknown error occurred.';
-      setError(`Failed to identify plant. ${errorMessage}`);
+      // Pick a random witty rhyme
+      const randomRhyme = ERROR_RHYMES[Math.floor(Math.random() * ERROR_RHYMES.length)];
+      setError(randomRhyme);
     } finally {
       setIsLoading(false);
     }
@@ -62,8 +68,6 @@ const App = () => {
   return (
     <div className={`min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300 ${theme}`}>
       <Header theme={theme} toggleTheme={toggleTheme} />
-      
-      {/* Updated Container: Uses almost full width (max-w-7xl) for a widescreen feel */}
       <main className="flex-grow w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <div className="max-w-4xl mx-auto text-center mb-12">
           <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight mb-6">
@@ -97,7 +101,7 @@ const App = () => {
             role="alert"
           >
             <XCircle className="w-6 h-6 shrink-0" />
-            <span className="font-medium">{error}</span>
+            <span className="font-medium italic">"{error}"</span>
           </motion.div>
         )}
 
