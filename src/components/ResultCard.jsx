@@ -46,31 +46,13 @@ const ConfidenceMeter = ({ score }) => {
 export const ResultCard = ({ plant, index, originalImage }) => {
   const [isFavorite, setIsFavorite] = React.useState(false);
   const [currentImage, setCurrentImage] = useState(plant.imageUrl || originalImage);
-  const [hasError, setHasError] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
-  // Client-side Wikipedia Image Fetcher (Redundant Backup)
   useEffect(() => {
-    let isMounted = true;
-    const fetchWikiImage = async () => {
-        if (!plant.imageUrl || hasError) {
-             try {
-                 const response = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(plant.commonName)}`);
-                 if (response.ok) {
-                     const data = await response.json();
-                     if (data.thumbnail && data.thumbnail.source && isMounted) {
-                         setCurrentImage(data.thumbnail.source);
-                         setHasError(false); // Recovered
-                     }
-                 }
-             } catch (e) {
-                 // Fallback silently to original image
-             }
-        }
-    };
-    fetchWikiImage();
-    return () => { isMounted = false; };
-  }, [plant.commonName, plant.imageUrl, hasError]);
-
+      // Reset when plant changes
+      setCurrentImage(plant.imageUrl || originalImage);
+      setImgError(false);
+  }, [plant.imageUrl, originalImage]);
 
   const renderList = (items) => items && items.length > 0 && (
     <ul className="text-sm space-y-1 mt-2">
@@ -91,24 +73,23 @@ export const ResultCard = ({ plant, index, originalImage }) => {
       transition={{ duration: 0.6, delay: index * 0.1, ease: "easeOut" }}
     >
       {/* Left Side: Immersive Image */}
-      <div className="lg:w-[40%] h-80 lg:h-auto bg-gray-100 dark:bg-gray-800 relative overflow-hidden">
+      <div className="lg:w-[45%] h-80 lg:h-auto bg-gray-100 dark:bg-gray-800 relative overflow-hidden">
         <img
           className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-          src={currentImage}
+          src={imgError ? originalImage : currentImage}
           alt={`Image of ${plant.commonName}`}
           loading="lazy"
-          onError={(e) => {
-             // Immediate fallback to user upload if external link fails
-             if (currentImage !== originalImage) {
-                setCurrentImage(originalImage);
-                setHasError(true); // Trigger the Wiki fetcher attempt
-             }
-          }}
+          onError={() => setImgError(true)}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-black/5"></div>
         
         <div className="absolute top-6 right-6 lg:hidden">
            <EdibleBadge isEdible={plant.isEdible} />
+        </div>
+        
+        {/* Image Source Label */}
+        <div className="absolute bottom-4 left-4 px-3 py-1 bg-black/50 backdrop-blur-md rounded-full text-[10px] text-white/80 uppercase tracking-wider font-medium">
+            {imgError ? 'Your Upload' : 'Reference Image'}
         </div>
       </div>
       
