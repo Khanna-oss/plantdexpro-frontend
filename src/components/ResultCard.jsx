@@ -52,7 +52,8 @@ export const ResultCard = ({ plant, index, originalImage }) => {
   const [fallbackLevel, setFallbackLevel] = useState(1);
 
   useEffect(() => {
-      // Try Wiki image first (layer 1)
+      // Reset whenever plant changes
+      // Priority: Wiki > YouTube > API > Original
       if (plant.imageUrl) {
           setImgSrc(plant.imageUrl);
           setFallbackLevel(1);
@@ -69,7 +70,7 @@ export const ResultCard = ({ plant, index, originalImage }) => {
   }, [plant, originalImage]);
 
   const handleImageError = () => {
-      // Fallback Chain
+      // Progressive degradation: If current fails, try next available
       if (fallbackLevel === 1 && plant.youtubeImage) {
           setImgSrc(plant.youtubeImage);
           setFallbackLevel(2);
@@ -100,7 +101,7 @@ export const ResultCard = ({ plant, index, originalImage }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: index * 0.1, ease: "easeOut" }}
     >
-      {/* LAYOUT FIX: CSS Grid to prevent vertical stretching. Image is 50% width on large screens. */}
+      {/* LAYOUT FIX: CSS Grid. Image 50% width on desktop. */}
       <div className="grid grid-cols-1 lg:grid-cols-2 h-full">
         
         {/* IMAGE SECTION */}
