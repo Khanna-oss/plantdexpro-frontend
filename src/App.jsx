@@ -27,7 +27,7 @@ const App = () => {
 
   useEffect(() => {
     setHistory(plantDexService.getHistory());
-  }, [results]); // Update history when new results come in
+  }, [results]);
 
   const fileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
@@ -71,40 +71,23 @@ const App = () => {
   return (
     <div className={`min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300 ${theme}`}>
       <Header theme={theme} toggleTheme={toggleTheme} />
-      <main className="flex-grow w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-        <div className="max-w-4xl mx-auto text-center mb-12">
-          <h1 className="text-5xl md:text-7xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight mb-6">
+      <main className="flex-grow w-full max-w-7xl mx-auto px-4 py-12">
+        <div className="max-w-3xl mx-auto text-center mb-10">
+          <h1 className="text-5xl md:text-7xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight mb-4">
             PlantDexPro
           </h1>
-          <p className="text-lg md:text-2xl text-gray-600 dark:text-gray-300 font-medium max-w-2xl mx-auto">
-            Identify plants instantly. Unlock recipes, safety tips, and care guides with AI.
-          </p>
+          <p className="text-lg text-gray-500">Identify plants instantly. Unlock recipes, safety tips, and care guides.</p>
         </div>
 
-        <div className="max-w-2xl mx-auto relative z-10 mb-16">
-          <ImageUploader 
-            onIdentify={handleIdentify} 
-            isLoading={isLoading} 
-            onClear={handleClear} 
-            onPreview={setImagePreview} 
-          />
+        <div className="max-w-xl mx-auto mb-12 relative z-10">
+          <ImageUploader onIdentify={handleIdentify} isLoading={isLoading} onClear={handleClear} onPreview={setImagePreview} />
         </div>
 
-        {isLoading && (
-           <div className="flex justify-center py-12">
-             <Spinner />
-           </div>
-        )}
+        {isLoading && <div className="flex justify-center py-10"><Spinner /></div>}
 
-        {error && !isLoading && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-2xl mx-auto text-center bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 px-6 py-4 rounded-xl shadow-sm flex items-center justify-center gap-3" 
-            role="alert"
-          >
-            <XCircle className="w-6 h-6 shrink-0" />
-            <span className="font-medium italic">"{error}"</span>
+        {error && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-xl mx-auto bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-center gap-3 justify-center shadow-sm">
+            <XCircle /> <span className="font-medium italic">"{error}"</span>
           </motion.div>
         )}
 
@@ -114,28 +97,21 @@ const App = () => {
           </div>
         )}
 
-        {/* History Section */}
         {!isLoading && results.length === 0 && history.length > 0 && (
-          <div className="max-w-5xl mx-auto mt-12">
-            <div className="flex items-center gap-2 mb-4 text-gray-400 uppercase text-xs font-bold tracking-widest">
-               <History size={14} /> Recent Discoveries
+            <div className="mt-16 border-t pt-8 dark:border-gray-800">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2 justify-center">
+                    <History size={14}/> Recent Scans
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 opacity-70 hover:opacity-100 transition-opacity">
+                    {history.map((h, i) => (
+                        <div key={i} className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 group cursor-pointer">
+                            <div className="h-24 overflow-hidden"><img src={h.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform"/></div>
+                            <div className="p-2 text-center"><p className="text-xs font-bold truncate">{h.name}</p></div>
+                        </div>
+                    ))}
+                </div>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-               {history.map((item, i) => (
-                  <div key={i} className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 opacity-75 hover:opacity-100 transition-opacity">
-                      <div className="h-24 bg-gray-200 relative">
-                         {item.image && <img src={item.image} className="w-full h-full object-cover" alt={item.name} />}
-                      </div>
-                      <div className="p-3">
-                         <p className="font-bold text-sm truncate">{item.name}</p>
-                         <p className="text-xs text-gray-500">{item.date}</p>
-                      </div>
-                  </div>
-               ))}
-            </div>
-          </div>
         )}
-
       </main>
       <Footer />
     </div>
