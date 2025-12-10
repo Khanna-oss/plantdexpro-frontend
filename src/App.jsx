@@ -6,6 +6,7 @@ import { ResultsDisplay } from './components/ResultsDisplay';
 import { Spinner } from './components/Spinner';
 import { useDarkMode } from './hooks/useDarkMode.js';
 import { plantDexService } from './services/plantDexService.js';
+import { compressImage } from './utils/imageHelper.js'; // Import the new helper
 import { motion } from 'framer-motion';
 import { XCircle, History } from 'lucide-react';
 
@@ -30,22 +31,21 @@ const App = () => {
     setHistory(plantDexService.getHistory());
   }, []);
 
-  const fileToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result.split(',')[1]);
-      reader.onerror = (error) => reject(error);
-    });
-  };
-
   const handleIdentify = useCallback(async (file) => {
     setIsLoading(true);
     setError(null);
     setResults([]);
 
     try {
-      const base64Image = await fileToBase64(file);
+      // 1. Create a local preview immediately
+      const objectUrl = URL.createObjectURL(file);
+      setImagePreview(objectUrl);
+
+      // 2. Compress the image before sending to API
+      // This fixes the issue with high-res phone camera photos failing
+      const base64Image = await compressImage(file);
+      
+      // 3. Send to Service
       const data = await plantDexService.identifyPlant(base64Image);
       
       if (data.error) throw new Error(data.error);
@@ -60,8 +60,13 @@ const App = () => {
       }
     } catch (e) {
       console.error(e);
-      const randomRhyme = ERROR_RHYMES[Math.floor(Math.random() * ERROR_RHYMES.length)];
-      setError(randomRhyme);
+      // If it's a specific error message from the service, show it. Otherwise rhyme.
+      if (e.message && !e.message.includes('Failed to fetch')) {
+         setError(e.message);
+      } else {
+         const randomRhyme = ERROR_RHYMES[Math.floor(Math.random() * ERROR_RHYMES.length)];
+         setError(randomRhyme);
+      }
     } finally {
       setIsLoading(false);
     }

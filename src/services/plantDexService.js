@@ -47,7 +47,7 @@ export const plantDexService = {
           {
             parts: [
               { inlineData: { mimeType: 'image/jpeg', data: base64Image } },
-              { text: "Analyze this plant image. Identify the plant. Provide scientific/common names, confidence, edibility details, safety warnings, description, and a fun fact." }
+              { text: "Analyze this image and identify the plant. IMPORTANT: Even if the plant is dry, withered, only showing leaves, or far away, make your best educated guess based on the visual features visible (leaf shape, stem structure, environment). Do not return 'unknown'. Provide scientific/common names, confidence score, edibility details, safety warnings, description, and a fun fact." }
             ]
           }
         ],
@@ -57,8 +57,9 @@ export const plantDexService = {
         },
       });
 
-      // Clean and parse JSON
+      // Clean and parse JSON robustly
       const text = response.text || "{}";
+      // Remove any Markdown code blocks if present
       const cleanText = text.replace(/```json|```/g, '').trim();
       const data = JSON.parse(cleanText);
       
@@ -82,7 +83,7 @@ export const plantDexService = {
 
     } catch (error) {
       console.error("Identification Error:", error);
-      return { error: "Failed to identify plant. Please try again." };
+      return { error: "Failed to identify plant. Please try again with a clearer image." };
     }
   },
 
@@ -93,7 +94,7 @@ export const plantDexService = {
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: `Find 3 high-quality YouTube video titles and URLs for "${plantName} recipes". Return a JSON array of objects with keys: title, channel, link, duration.`,
+        contents: `Find 3 high-quality YouTube video titles and URLs for "${plantName} recipes" or "how to use ${plantName}". Return a JSON array of objects with keys: title, channel, link, duration.`,
         config: {
           tools: [{ googleSearch: {} }],
           responseMimeType: "application/json"
@@ -121,8 +122,8 @@ export const plantDexService = {
   saveToHistory: (item) => {
     try {
       const history = plantDexService.getHistory();
-      // Avoid duplicates at the top
-      if (history.length > 0 && history[0].name === item.name) return;
+      // Avoid duplicates at the top (simple check)
+      if (history.length > 0 && history[0].image === item.image) return;
       
       const newHistory = [item, ...history].slice(0, 10); // Keep last 10
       localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
