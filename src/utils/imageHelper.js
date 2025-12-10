@@ -1,57 +1,164 @@
-/**
- * Compresses and resizes an image file to ensure it fits within API payload limits.
- * Targets a max dimension of 1024px and converts to JPEG.
- * 
- * @param {File} file - The uploaded image file
- * @returns {Promise<string>} - Base64 string of the compressed image (raw, no data URI prefix)
- */
-export const compressImage = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      
-      reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target.result;
-        
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-          
-          // Max dimension 1024px is optimal for Gemini Vision (balances detail vs speed)
-          const MAX_SIZE = 1024;
-          
-          if (width > height) {
-            if (width > MAX_SIZE) {
-              height *= MAX_SIZE / width;
-              width = MAX_SIZE;
-            }
-          } else {
-            if (height > MAX_SIZE) {
-              width *= MAX_SIZE / height;
-              height = MAX_SIZE;
-            }
+import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/genai";
+
+// Ensure we grab the key from process.env (injected by Vite) or fallback to import.meta.env
+const apiKey = process.env.API_KEY || (import.meta && import.meta.env && import.meta.env.VITE_API_KEY);
+const ai = new GoogleGenAI({ apiKey: apiKey });
+
+const HISTORY_KEY = 'plantdex_history';
+
+export const plantDexService = {
+  /**
+   * Identifies the plant using Gemini Vision.
+   */
+  identifyPlant: async (base64Image) => {
+    // 1. Basic Validation
+    if (!apiKey) {
+      return { error: "API Key is missing. Please check your configuration." };
+    }
+
+    const plantSchema = {
+      type: Type.OBJECT,
+      properties: {
+        plants: {
+          type: Type.ARRAY,
+          description: "An array containing information about the identified plant(s).",
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              scientificName: { type: Type.STRING, description: "The scientific name of the plant." },
+              commonName: { type: Type.STRING, description: "The common name of the plant." },
+              confidenceScore: { type: Type.NUMBER, description: "A confidence score between 0 and 1." },
+              isEdible: { type: Type.BOOLEAN, description: "Is the plant edible?" },
+              edibleParts: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+                description: "List of edible parts."
+              },
+              description: { type: Type.STRING, description: "Brief description." },
+              toxicParts: { type: Type.ARRAY, items: { type: Type.STRING } },
+              safetyWarnings: { type: Type.ARRAY, items: { type: Type.STRING } },
+              funFact: { type: Type.STRING, description: "A fun or interesting fact about the plant." },
+              videoContext: { type: Type.STRING, description: "Either 'recipes' or 'uses' depending on edibility." }
+            },
+            required: ["scientificName", "commonName", "confidenceScore", "isEdible", "edibleParts", "description", "funFact", "videoContext"],
           }
-          
-          canvas.width = width;
-          canvas.height = height;
-          
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          // Compress to JPEG at 80% quality
-          // This typically reduces a 5MB phone photo to ~100-200KB
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          
-          // Remove the "data:image/jpeg;base64," prefix to get raw base64 for the API
-          const base64 = dataUrl.split(',')[1];
-          resolve(base64);
-        };
-        
-        img.onerror = (err) => reject(new Error("Failed to load image for compression"));
-      };
+        }
+      },
+      required: ["plants"],
+    };
+
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: [
+          {
+            parts: [
+              { inlineData: { mimeType: 'image/jpeg', data: base64Image } },
+              { text: "Identify this plant. Even if the plant is dry, withered, common, or partially visible, provide your best guess. Do not return 'unknown'. If it's a landscape, identify the dominant tree or shrub. Output strict JSON." }
+            ]
+          }
+        ],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: plantSchema,
+          // CRITICAL: Disable safety filters to allow identification of withered/organic matter
+          safetySettings: [
+            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+          ]
+        },
+      });
+
+      // Robust JSON extraction
+      const text = response.text || "{}";
+      let data = {};
       
-      reader.onerror = (err) => reject(new Error("Failed to read file"));
-    });
-  };
+      try {
+          // Try standard parse
+          data = JSON.parse(text);
+      } catch (e) {
+          // Fallback: Extract JSON object using regex if markdown/extra text exists
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+              data = JSON.parse(jsonMatch[0]);
+          } else {
+              console.error("Raw Response:", text);
+              throw new Error("Invalid response format from AI");
+          }
+      }
+      
+      let plants = data.plants || [];
+
+      // Save top result to history
+      if (plants.length > 0) {
+        const topPlant = plants[0];
+        // Generate a unique ID for React rendering
+        plants = plants.map((p, idx) => ({ ...p, id: Date.now() + idx }));
+
+        const historyItem = {
+          name: topPlant.commonName,
+          date: new Date().toLocaleDateString(),
+          image: `data:image/jpeg;base64,${base64Image}`
+        };
+        plantDexService.saveToHistory(historyItem);
+      }
+
+      return { plants };
+
+    } catch (error) {
+      console.error("Identification Error:", error);
+      // RETURN THE REAL ERROR
+      return { error: error.message || "An unexpected error occurred." };
+    }
+  },
+
+  /**
+   * Finds specific recipes or videos using Gemini Search Grounding.
+   */
+  findSpecificRecipes: async (plantName) => {
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: `Find 3 high-quality YouTube video titles and URLs for "${plantName} recipes" or "how to use ${plantName}". Return a JSON array of objects with keys: title, channel, link, duration.`,
+        config: {
+          tools: [{ googleSearch: {} }],
+          responseMimeType: "application/json"
+        }
+      });
+      
+      const text = response.text || "[]";
+      // Simple regex cleanup for JSON array
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      const jsonStr = jsonMatch ? jsonMatch[0] : "[]";
+      
+      return JSON.parse(jsonStr);
+    } catch (e) {
+      console.warn("Recipe search failed, falling back to empty list", e);
+      return [];
+    }
+  },
+
+  getHistory: () => {
+    try {
+      const stored = localStorage.getItem(HISTORY_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  saveToHistory: (item) => {
+    try {
+      const history = plantDexService.getHistory();
+      // Avoid duplicates at the top (simple check)
+      if (history.length > 0 && history[0].image === item.image) return;
+      
+      const newHistory = [item, ...history].slice(0, 10); // Keep last 10
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
+    } catch (e) {
+      console.error("Failed to save history", e);
+    }
+  }
+};

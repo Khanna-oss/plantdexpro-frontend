@@ -1,6 +1,8 @@
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Ensure we grab the key from process.env (injected by Vite) or fallback to import.meta.env
+const apiKey = process.env.API_KEY || (import.meta && import.meta.env && import.meta.env.VITE_API_KEY);
+const ai = new GoogleGenAI({ apiKey: apiKey });
 
 const HISTORY_KEY = 'plantdex_history';
 
@@ -9,6 +11,11 @@ export const plantDexService = {
    * Identifies the plant using Gemini Vision.
    */
   identifyPlant: async (base64Image) => {
+    // 1. Basic Validation
+    if (!apiKey) {
+      return { error: "API Key is missing. Please check your configuration." };
+    }
+
     const plantSchema = {
       type: Type.OBJECT,
       properties: {
@@ -47,7 +54,7 @@ export const plantDexService = {
           {
             parts: [
               { inlineData: { mimeType: 'image/jpeg', data: base64Image } },
-              { text: "Analyze this image and identify the plant. IMPORTANT: If the plant is dry, withered, dead, or only showing branches/leaves, DO NOT fail. Make your best educated guess based on the visible features. If it is a distant tree or generic landscape, identify the most prominent species. Do not return 'unknown'. Provide scientific/common names, confidence score (lower if unsure), edibility details, safety warnings, description, and a fun fact." }
+              { text: "Identify this plant. Even if the plant is dry, withered, common, or partially visible, provide your best guess. Do not return 'unknown'. If it's a landscape, identify the dominant tree or shrub. Output strict JSON." }
             ]
           }
         ],
@@ -77,6 +84,7 @@ export const plantDexService = {
           if (jsonMatch) {
               data = JSON.parse(jsonMatch[0]);
           } else {
+              console.error("Raw Response:", text);
               throw new Error("Invalid response format from AI");
           }
       }
@@ -101,7 +109,8 @@ export const plantDexService = {
 
     } catch (error) {
       console.error("Identification Error:", error);
-      return { error: "Failed to identify plant. Please try again with a clearer image." };
+      // RETURN THE REAL ERROR
+      return { error: error.message || "An unexpected error occurred." };
     }
   },
 
