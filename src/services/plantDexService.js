@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -47,21 +47,39 @@ export const plantDexService = {
           {
             parts: [
               { inlineData: { mimeType: 'image/jpeg', data: base64Image } },
-              { text: "Analyze this image and identify the plant. IMPORTANT: Even if the plant is dry, withered, only showing leaves, or far away, make your best educated guess based on the visual features visible (leaf shape, stem structure, environment). Do not return 'unknown'. Provide scientific/common names, confidence score, edibility details, safety warnings, description, and a fun fact." }
+              { text: "Analyze this image and identify the plant. IMPORTANT: If the plant is dry, withered, dead, or only showing branches/leaves, DO NOT fail. Make your best educated guess based on the visible features. If it is a distant tree or generic landscape, identify the most prominent species. Do not return 'unknown'. Provide scientific/common names, confidence score (lower if unsure), edibility details, safety warnings, description, and a fun fact." }
             ]
           }
         ],
         config: {
           responseMimeType: "application/json",
           responseSchema: plantSchema,
+          // CRITICAL: Disable safety filters to allow identification of withered/organic matter
+          safetySettings: [
+            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+          ]
         },
       });
 
-      // Clean and parse JSON robustly
+      // Robust JSON extraction
       const text = response.text || "{}";
-      // Remove any Markdown code blocks if present
-      const cleanText = text.replace(/```json|```/g, '').trim();
-      const data = JSON.parse(cleanText);
+      let data = {};
+      
+      try {
+          // Try standard parse
+          data = JSON.parse(text);
+      } catch (e) {
+          // Fallback: Extract JSON object using regex if markdown/extra text exists
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+              data = JSON.parse(jsonMatch[0]);
+          } else {
+              throw new Error("Invalid response format from AI");
+          }
+      }
       
       let plants = data.plants || [];
 
@@ -102,8 +120,11 @@ export const plantDexService = {
       });
       
       const text = response.text || "[]";
-      const cleanText = text.replace(/```json|```/g, '').trim();
-      return JSON.parse(cleanText);
+      // Simple regex cleanup for JSON array
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      const jsonStr = jsonMatch ? jsonMatch[0] : "[]";
+      
+      return JSON.parse(jsonStr);
     } catch (e) {
       console.warn("Recipe search failed, falling back to empty list", e);
       return [];

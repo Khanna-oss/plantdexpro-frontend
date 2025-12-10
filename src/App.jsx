@@ -6,7 +6,7 @@ import { ResultsDisplay } from './components/ResultsDisplay';
 import { Spinner } from './components/Spinner';
 import { useDarkMode } from './hooks/useDarkMode.js';
 import { plantDexService } from './services/plantDexService.js';
-import { compressImage } from './utils/imageHelper.js'; // Import the new helper
+import { compressImage } from './utils/imageHelper.js';
 import { motion } from 'framer-motion';
 import { XCircle, History } from 'lucide-react';
 
@@ -42,7 +42,7 @@ const App = () => {
       setImagePreview(objectUrl);
 
       // 2. Compress the image before sending to API
-      // This fixes the issue with high-res phone camera photos failing
+      // This is crucial for high-res images to avoid timeouts
       const base64Image = await compressImage(file);
       
       // 3. Send to Service

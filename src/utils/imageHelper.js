@@ -1,9 +1,9 @@
 /**
- * Compresses an image file to ensure it fits within API payload limits.
- * Resizes images larger than 1024px and reduces quality slightly.
+ * Compresses and resizes an image file to ensure it fits within API payload limits.
+ * Targets a max dimension of 1024px and converts to JPEG.
  * 
  * @param {File} file - The uploaded image file
- * @returns {Promise<string>} - Base64 string of the compressed image (no data:image/jpeg;base64, prefix)
+ * @returns {Promise<string>} - Base64 string of the compressed image (raw, no data URI prefix)
  */
 export const compressImage = (file) => {
     return new Promise((resolve, reject) => {
@@ -19,7 +19,7 @@ export const compressImage = (file) => {
           let width = img.width;
           let height = img.height;
           
-          // Max dimension 1024px to keep payload light for Gemini
+          // Max dimension 1024px is optimal for Gemini Vision (balances detail vs speed)
           const MAX_SIZE = 1024;
           
           if (width > height) {
@@ -40,10 +40,11 @@ export const compressImage = (file) => {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
           
-          // Compress to JPEG at 70% quality
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          // Compress to JPEG at 80% quality
+          // This typically reduces a 5MB phone photo to ~100-200KB
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
           
-          // Remove the prefix to get raw base64
+          // Remove the "data:image/jpeg;base64," prefix to get raw base64 for the API
           const base64 = dataUrl.split(',')[1];
           resolve(base64);
         };
