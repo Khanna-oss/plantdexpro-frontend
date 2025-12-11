@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Header } from './components/Header';
-import { Footer } from './components/Footer';
-import { ImageUploader } from './components/ImageUploader';
-import { ResultsDisplay } from './components/ResultsDisplay';
-import { Spinner } from './components/Spinner';
+import { Header } from './components/Header.jsx';
+import { Footer } from './components/Footer.jsx';
+import { ImageUploader } from './components/ImageUploader.jsx';
+import { ResultsDisplay } from './components/ResultsDisplay.jsx';
+import { Spinner } from './components/Spinner.jsx';
 import { useDarkMode } from './hooks/useDarkMode.js';
 import { plantDexService } from './services/plantDexService.js';
 import { compressImage } from './utils/imageHelper.js';
@@ -31,17 +31,16 @@ const App = () => {
       const objectUrl = URL.createObjectURL(file);
       setImagePreview(objectUrl);
 
-      // Compress image to ensure upload success
+      // Compress
       const base64Image = await compressImage(file);
       
+      // Identify
       const data = await plantDexService.identifyPlant(base64Image);
       
-      if (data.error) {
-        throw new Error(data.error);
-      }
+      if (data.error) throw new Error(data.error);
       
       if (!data.plants || data.plants.length === 0) {
-        throw new Error("No plants identified. Try a closer shot.");
+        throw new Error("No plants identified. Try a clearer image.");
       }
 
       setResults(data.plants);
@@ -49,7 +48,7 @@ const App = () => {
 
     } catch (e) {
       console.error(e);
-      setError(e.message || "Failed to process image.");
+      setError(e.message || "An unknown error occurred.");
     } finally {
       setIsLoading(false);
     }

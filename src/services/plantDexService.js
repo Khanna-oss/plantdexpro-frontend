@@ -1,24 +1,17 @@
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/genai";
 
-// Robust API Key retrieval
-let apiKey = '';
-try {
-  apiKey = process.env.API_KEY;
-} catch (e) {
-  // process not defined, ignore
-}
+// Access the API key injected by Vite. 
+// We use a string literal fallback to ensure the code doesn't crash if env is missing.
+const API_KEY = process.env.API_KEY || '';
 
-// Fallback for Vite environments if process.env.API_KEY didn't work directly
-if (!apiKey && import.meta && import.meta.env) {
-  apiKey = import.meta.env.VITE_API_KEY;
-}
-
-const ai = new GoogleGenAI({ apiKey: apiKey });
+const ai = new GoogleGenAI({ apiKey: API_KEY });
 const HISTORY_KEY = 'plantdex_history';
 
 export const plantDexService = {
   identifyPlant: async (base64Image) => {
-    if (!apiKey) {
+    // 1. Validate Key
+    if (!API_KEY) {
+      console.error("API Key is missing. Please check your .env file or Vercel settings.");
       return { error: "Configuration Error: API Key is missing." };
     }
 
@@ -49,13 +42,14 @@ export const plantDexService = {
     };
 
     try {
+      // 2. Call Gemini
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: [
           {
             parts: [
               { inlineData: { mimeType: 'image/jpeg', data: base64Image } },
-              { text: "Identify this plant. Even if dry, withered, or distant, provide the best possible identification. If it is a generic tree or shrub, identify the likely species. Do not fail. Return valid JSON." }
+              { text: "Identify this plant. Even if it is dry, withered, or a distant tree, make your best guess. Do not return unknown. Return valid JSON." }
             ]
           }
         ],
@@ -71,19 +65,30 @@ export const plantDexService = {
         },
       });
 
+      // 3. Robust Parsing
       const text = response.text || "{}";
       let data = {};
+      
       try {
           data = JSON.parse(text);
       } catch (e) {
+          // Fallback regex to extract JSON if the model adds markdown formatting
           const jsonMatch = text.match(/\{[\s\S]*\}/);
-          if (jsonMatch) data = JSON.parse(jsonMatch[0]);
+          if (jsonMatch) {
+            try {
+              data = JSON.parse(jsonMatch[0]);
+            } catch (inner) {
+              console.error("Failed to parse extracted JSON");
+            }
+          }
       }
       
       let plants = data.plants || [];
 
+      // 4. Save to History
       if (plants.length > 0) {
         const topPlant = plants[0];
+        // Add ID for React keys
         plants = plants.map((p, idx) => ({ ...p, id: Date.now() + idx }));
         
         plantDexService.saveToHistory({
@@ -97,6 +102,7 @@ export const plantDexService = {
 
     } catch (error) {
       console.error("AI Error:", error);
+      // Return the actual error message to the UI
       return { error: error.message || "Unable to identify plant." };
     }
   },
@@ -105,12 +111,15 @@ export const plantDexService = {
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: `Find 3 YouTube video titles/links for "${plantName}". Return JSON array [{title, channel, link, duration}].`,
+        contents: `Find 3 YouTube video titles and links for "${plantName}". Return JSON array [{title, channel, link, duration}].`,
         config: { tools: [{ googleSearch: {} }], responseMimeType: "application/json" }
       });
-      const match = (response.text || "").match(/\[[\s\S]*\]/);
+      
+      const text = response.text || "";
+      const match = text.match(/\[[\s\S]*\]/);
       return match ? JSON.parse(match[0]) : [];
     } catch (e) {
+      console.warn("Search failed", e);
       return [];
     }
   },
@@ -124,7 +133,6 @@ export const plantDexService = {
   saveToHistory: (item) => {
     try {
       const history = plantDexService.getHistory();
-      // Remove duplicates based on name to keep list fresh
       const filtered = history.filter(h => h.name !== item.name);
       const newHistory = [item, ...filtered].slice(0, 10);
       localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));

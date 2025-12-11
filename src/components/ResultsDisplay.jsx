@@ -1,5 +1,5 @@
 import React from 'react';
-import { ResultCard } from './ResultCard';
+import { ResultCard } from './ResultCard.jsx';
 
 export const ResultsDisplay = ({ results, imagePreview }) => {
   return (

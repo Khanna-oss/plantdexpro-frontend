@@ -1,11 +1,8 @@
 /**
  * Compresses and resizes an image file to ensure it fits within API payload limits.
  * Targets a max dimension of 800px and converts to JPEG.
- * 
- * @param {File} file - The uploaded image file
- * @returns {Promise<string>} - Base64 string of the compressed image (raw, no data URI prefix)
  */
-const compressImage = (file) => {
+export const compressImage = (file) => {
   return new Promise((resolve, reject) => {
     try {
       const reader = new FileReader();
@@ -20,7 +17,6 @@ const compressImage = (file) => {
           let width = img.width;
           let height = img.height;
           
-          // Max dimension 800px ensures payload is well under 1MB
           const MAX_SIZE = 800;
           
           if (width > height) {
@@ -41,15 +37,12 @@ const compressImage = (file) => {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
           
-          // Compress to JPEG at 70% quality
           const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-          
-          // Remove the "data:image/jpeg;base64," prefix
           const base64 = dataUrl.split(',')[1];
           resolve(base64);
         };
         
-        img.onerror = () => reject(new Error("Failed to load image for compression"));
+        img.onerror = () => reject(new Error("Failed to load image"));
       };
       
       reader.onerror = () => reject(new Error("Failed to read file"));
@@ -58,5 +51,3 @@ const compressImage = (file) => {
     }
   });
 };
-
-export { compressImage };

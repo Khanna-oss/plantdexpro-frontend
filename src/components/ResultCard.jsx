@@ -90,8 +90,6 @@ export const ResultCard = ({ plant, index }) => {
       transition={{ duration: 0.6, delay: index * 0.1, ease: "easeOut" }}
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 h-full">
-        
-        {/* CONTENT SECTION - Full Width */}
         <div className="lg:col-span-12 p-6 md:p-10 flex flex-col justify-between bg-white dark:bg-gray-900">
           <div>
             <div className="flex justify-between items-start mb-6">
@@ -126,7 +124,6 @@ export const ResultCard = ({ plant, index }) => {
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
-               {/* Dynamic Info Box */}
                {plant.isEdible ? (
                   <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-5 rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
                     <h4 className="font-bold text-emerald-800 dark:text-emerald-200 text-xs uppercase tracking-wide mb-2 flex items-center gap-2">
@@ -153,7 +150,6 @@ export const ResultCard = ({ plant, index }) => {
             </div>
           </div>
 
-          {/* Video Section */}
           <div className="pt-8 border-t border-gray-100 dark:border-gray-800">
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5 flex items-center gap-2">
                   {plant.videoContext === 'recipes' ? <Youtube size={16} className="text-red-600"/> : <Stethoscope size={16} className="text-blue-600"/>}
