@@ -1,8 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Info, Youtube, ShieldAlert, CheckCircle2, Leaf, Sparkles, Stethoscope, Share2, Lightbulb, Loader2, Play } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, Leaf, Sparkles, Share2, Lightbulb, Loader2, Youtube, Stethoscope } from 'lucide-react';
 import { plantDexService } from '../services/plantDexService.js';
+import { YouTubePlayer } from './YouTubePlayer.jsx';
+import { HealthBenefits } from './HealthBenefits.jsx';
 
 const EdibleBadge = ({ isEdible }) => {
   const bgColor = isEdible ? 'bg-emerald-100 dark:bg-emerald-900/40' : 'bg-rose-100 dark:bg-rose-900/40';
@@ -12,8 +13,8 @@ const EdibleBadge = ({ isEdible }) => {
   const Icon = isEdible ? CheckCircle2 : ShieldAlert;
 
   return (
-    <span className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold border ${bgColor} ${textColor} ${borderColor} shadow-sm`}>
-      <Icon size={16} />
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${bgColor} ${textColor} ${borderColor} shadow-sm uppercase tracking-wide`}>
+      <Icon size={14} />
       {text}
     </span>
   );
@@ -33,9 +34,9 @@ const ConfidenceMeter = ({ score }) => {
                 </span>
                 <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{percentage}%</span>
             </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
                 <motion.div
-                  className={`${barColor} h-2 rounded-full shadow-sm`}
+                  className={`${barColor} h-1.5 rounded-full shadow-sm`}
                   initial={{ width: 0 }}
                   animate={{ width: `${percentage}%` }}
                   transition={{ duration: 1, ease: "circOut" }}
@@ -45,98 +46,13 @@ const ConfidenceMeter = ({ score }) => {
     );
 };
 
-// --- Video Player Logic ---
-
-const getYoutubeId = (url) => {
-    if (!url) return null;
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
-};
-
-const VideoPlayer = ({ video }) => {
-    const [isPlaying, setIsPlaying] = useState(false);
-    const videoId = getYoutubeId(video.link);
-
-    // If we can't extract an ID (e.g. it's a search result link), render a smart button card
-    if (!videoId) {
-        return (
-            <a href={video.link} target="_blank" rel="noreferrer" className="block p-4 rounded-xl bg-gray-50 dark:bg-gray-800/80 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-700 group">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                        <Youtube size={24} />
-                    </div>
-                    <div>
-                        <p className="font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 transition-colors">{video.title}</p>
-                        <p className="text-xs text-gray-500">{video.channel} • {video.duration}</p>
-                        <p className="text-xs text-blue-600 mt-1 font-semibold flex items-center gap-1">
-                            Click to open in YouTube <Youtube size={12}/>
-                        </p>
-                    </div>
-                </div>
-            </a>
-        );
-    }
-
-    // Embeddable Video Player
-    return (
-        <div className="bg-black/5 dark:bg-black/20 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
-            {isPlaying ? (
-                <div className="relative pt-[56.25%] bg-black">
-                    <iframe
-                        className="absolute top-0 left-0 w-full h-full"
-                        src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}
-                        title={video.title}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                    ></iframe>
-                </div>
-            ) : (
-                <div className="relative cursor-pointer group" onClick={() => setIsPlaying(true)}>
-                    {/* High Quality Thumbnail */}
-                    <img 
-                        src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`} 
-                        alt={video.title}
-                        className="w-full h-56 sm:h-72 object-cover" 
-                        loading="lazy"
-                    />
-                    
-                    {/* Dark Overlay */}
-                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                         {/* Play Button */}
-                         <div className="w-16 h-16 bg-red-600/90 rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform backdrop-blur-sm">
-                            <Play fill="white" className="text-white ml-1.5" size={32} />
-                         </div>
-                    </div>
-                    
-                    {/* Duration Badge */}
-                    <div className="absolute bottom-3 right-3 bg-black/80 text-white text-xs font-bold px-2 py-1 rounded backdrop-blur-md border border-white/10">
-                        {video.duration}
-                    </div>
-                </div>
-            )}
-            
-            {/* Video Details */}
-            <div className="p-5 bg-white dark:bg-gray-800">
-                <h4 className="font-bold text-gray-900 dark:text-white text-lg leading-tight mb-2 line-clamp-2">
-                    {video.title}
-                </h4>
-                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                    <Youtube size={16} className="text-red-600"/>
-                    <span className="font-medium text-gray-700 dark:text-gray-300">{video.channel}</span>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 export const ResultCard = ({ plant, index }) => {
-  const [isFavorite, setIsFavorite] = useState(false);
   const [videos, setVideos] = useState([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
+  const [activeVideoUrl, setActiveVideoUrl] = useState(null);
 
   useEffect(() => {
-    if (plant.isEdible && plant.commonName) {
+    if (plant.commonName) {
       setLoadingVideos(true);
       plantDexService.findSpecificRecipes(plant.commonName)
         .then(res => setVideos(res || []))
@@ -158,10 +74,10 @@ export const ResultCard = ({ plant, index }) => {
   };
 
   const renderList = (items) => items && items.length > 0 && (
-    <ul className="text-sm space-y-1 mt-2">
+    <ul className="text-sm space-y-1.5 mt-2 text-gray-600 dark:text-gray-400">
       {items.map((item, i) => (
         <li key={i} className="flex items-start gap-2">
-            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-current opacity-60 shrink-0"></span>
+            <span className="mt-2 w-1 h-1 rounded-full bg-current opacity-60 shrink-0"></span>
             <span className="leading-relaxed">{item}</span>
         </li>
       ))}
@@ -170,96 +86,122 @@ export const ResultCard = ({ plant, index }) => {
 
   return (
     <motion.div
-      className="group relative bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800 w-full max-w-4xl mx-auto"
+      className="w-full max-w-[760px] mx-auto"
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: index * 0.1, ease: "easeOut" }}
     >
-      <div className="grid grid-cols-1 lg:grid-cols-12 h-full">
-        <div className="lg:col-span-12 p-6 md:p-10 flex flex-col justify-between bg-white dark:bg-gray-900">
-          <div>
-            <div className="flex justify-between items-start mb-6">
+      <div className="bg-white dark:bg-gray-900 rounded-[2rem] shadow-xl border border-gray-100 dark:border-gray-800 overflow-hidden mb-8">
+        
+        {/* --- Main Info Section --- */}
+        <div className="p-8 md:p-10">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-8">
               <div>
-                <span className="px-3 py-1 rounded-md bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold uppercase tracking-wider border border-emerald-100 dark:border-emerald-800/50 mb-3 inline-block">
+                <span className="inline-block px-3 py-1 rounded-md bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold uppercase tracking-widest border border-emerald-100 dark:border-emerald-800/50 mb-3">
                    {plant.scientificName}
                 </span>
-                <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-[1.1]">
+                <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-[1.1] mb-2">
                   {plant.commonName}
                 </h2>
+                <div className="flex items-center gap-3 mt-4">
+                     <EdibleBadge isEdible={plant.isEdible} />
+                     <button onClick={handleShare} className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors" aria-label="Share">
+                        <Share2 size={18} />
+                    </button>
+                </div>
               </div>
-              <div className="flex gap-3">
-                  <button onClick={handleShare} className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                      <Share2 size={20} />
-                  </button>
-                  <EdibleBadge isEdible={plant.isEdible} />
+              
+              <div className="w-full md:w-48 shrink-0">
+                  <ConfidenceMeter score={plant.confidenceScore} />
               </div>
             </div>
 
-            <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-6 font-medium">
+            {/* Description */}
+            <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-8 font-medium">
                 {plant.description}
             </p>
             
+            {/* Fun Fact */}
             {plant.funFact && (
-                <div className="mb-8 flex gap-3 items-start bg-amber-50 dark:bg-amber-900/10 p-4 rounded-xl border border-amber-100 dark:border-amber-800/30">
-                    <Lightbulb className="text-amber-500 shrink-0 mt-1" size={20} />
+                <div className="mb-8 flex gap-4 items-start bg-amber-50 dark:bg-amber-900/10 p-5 rounded-2xl border border-amber-100 dark:border-amber-800/30">
+                    <div className="bg-amber-100 dark:bg-amber-900/40 p-2 rounded-full shrink-0">
+                        <Lightbulb className="text-amber-600 dark:text-amber-400" size={20} />
+                    </div>
                     <div>
-                        <h4 className="font-bold text-amber-800 dark:text-amber-200 text-xs uppercase tracking-wide mb-1">Did You Know?</h4>
-                        <p className="text-amber-900 dark:text-amber-100 text-sm italic">{plant.funFact}</p>
+                        <h4 className="font-bold text-amber-900 dark:text-amber-200 text-xs uppercase tracking-wide mb-1">Did You Know?</h4>
+                        <p className="text-amber-900/80 dark:text-amber-100/80 text-sm leading-relaxed">{plant.funFact}</p>
                     </div>
                 </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
+            {/* Edible/Toxic Details */}
+            <div className="grid grid-cols-1 gap-6 mb-2">
                {plant.isEdible ? (
-                  <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-5 rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
-                    <h4 className="font-bold text-emerald-800 dark:text-emerald-200 text-xs uppercase tracking-wide mb-2 flex items-center gap-2">
-                      <Leaf size={14} /> Edible Parts
+                  <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-6 rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
+                    <h4 className="font-bold text-emerald-800 dark:text-emerald-200 text-xs uppercase tracking-wide mb-3 flex items-center gap-2">
+                      <Leaf size={16} /> Edible Parts
                     </h4>
-                    <p className="text-emerald-700 dark:text-emerald-300 text-sm font-medium">
+                    <p className="text-emerald-900 dark:text-emerald-100 text-sm font-medium leading-relaxed">
                       {plant.edibleParts?.join(', ') || 'None listed'}
                     </p>
                   </div>
                ) : (
-                   <div className="bg-rose-50/50 dark:bg-rose-900/10 p-5 rounded-2xl border border-rose-100 dark:border-rose-800/30">
-                      <h4 className="font-bold text-rose-800 dark:text-rose-200 text-xs uppercase tracking-wide mb-2 flex items-center gap-2">
-                          <ShieldAlert size={14} /> Toxicity
+                   <div className="bg-rose-50/50 dark:bg-rose-900/10 p-6 rounded-2xl border border-rose-100 dark:border-rose-800/30">
+                      <h4 className="font-bold text-rose-800 dark:text-rose-200 text-xs uppercase tracking-wide mb-3 flex items-center gap-2">
+                          <ShieldAlert size={16} /> Toxicity Alert
                       </h4>
-                      <div className="text-rose-700 dark:text-rose-300 text-sm font-medium">
-                          {renderList(plant.toxicParts) || "No specific toxicity details."}
+                      <div className="text-rose-900 dark:text-rose-100 font-medium">
+                          {renderList(plant.toxicParts) || <p className="text-sm">No specific toxicity details available.</p>}
                       </div>
                    </div>
                )}
-               
-               <div className="bg-gray-50 dark:bg-gray-800/50 p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50 flex flex-col justify-center">
-                   <ConfidenceMeter score={plant.confidenceScore} />
-               </div>
             </div>
-          </div>
+        </div>
 
-          <div className="pt-8 border-t border-gray-100 dark:border-gray-800">
-              <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                  {plant.videoContext === 'recipes' ? <Youtube size={18} className="text-red-600"/> : <Stethoscope size={18} className="text-blue-600"/>}
-                  {plant.videoContext === 'recipes' ? 'Curated Recipes' : 'Beneficial Uses & Care'}
-              </h3>
+        {/* --- Health Benefits (If Edible) --- */}
+        {plant.isEdible && (
+            <div className="px-8 md:px-10 pb-4">
+                 <HealthBenefits plant={plant} />
+            </div>
+        )}
+
+        {/* --- Video Section --- */}
+        <div className="bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800 p-8 md:p-10">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+                    {plant.videoContext === 'recipes' ? <Youtube size={20} className="text-red-600"/> : <Stethoscope size={20} className="text-blue-600"/>}
+                    {plant.videoContext === 'recipes' ? 'Related Recipes' : 'Beneficial Uses & Care'}
+                </h3>
+              </div>
 
               {loadingVideos ? (
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <Loader2 className="animate-spin w-4 h-4" /> Finding the best videos...
+                  <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                      <Loader2 className="animate-spin w-8 h-8 mb-3 text-emerald-500" /> 
+                      <p className="text-sm font-medium">Curating videos for you...</p>
                   </div>
               ) : videos.length > 0 ? (
                   <div className="space-y-6"> 
-                      {/* ^^^ Changed from grid to space-y-6 to show videos one after another */}
                       {videos.map((v, i) => (
-                          <VideoPlayer key={i} video={v} />
+                          <div key={i} className="relative">
+                             <YouTubePlayer 
+                                video={v} 
+                                isActive={activeVideoUrl === v.link}
+                                onPlay={() => setActiveVideoUrl(v.link)}
+                             />
+                             {/* Subtle divider except for last item */}
+                             {i < videos.length - 1 && (
+                                <div className="absolute -bottom-3 left-0 right-0 h-px bg-gray-200/50 dark:bg-gray-700/50 mx-4 hidden" />
+                             )}
+                          </div>
                       ))}
                   </div>
               ) : (
-                  <a href={`https://www.youtube.com/results?search_query=${plant.commonName}+${plant.isEdible ? 'recipe' : 'benefits'}`} target="_blank" className="w-full py-4 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-xl text-center text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2">
-                      <Youtube size={18} />
+                  <a href={`https://www.youtube.com/results?search_query=${plant.commonName}+${plant.isEdible ? 'recipe' : 'benefits'}`} target="_blank" rel="noreferrer" className="block w-full py-8 bg-white dark:bg-gray-800 border-2 border-dashed border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 font-bold rounded-2xl text-center hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:border-emerald-300 transition-all group">
+                      <Youtube size={32} className="mx-auto mb-2 text-gray-300 group-hover:text-red-500 transition-colors" />
                       Find Videos on YouTube
                   </a>
               )}
-          </div>
         </div>
       </div>
     </motion.div>
