@@ -1,78 +1,79 @@
-import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/genai";
+import Groq from "groq-sdk";
 
-// Access the API key injected by Vite. 
-// We use a string literal fallback to ensure the code doesn't crash if env is missing.
-const API_KEY = process.env.API_KEY || '';
+// Access the API key injected by Vite.
+const API_KEY = process.env.GROQ_API_KEY || '';
 
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+// Initialize Groq Client
+// dangerouslyAllowBrowser: true is required for client-side usage in Vite
+const groq = new Groq({ 
+  apiKey: API_KEY, 
+  dangerouslyAllowBrowser: true 
+});
+
 const HISTORY_KEY = 'plantdex_history';
 
 export const plantDexService = {
   identifyPlant: async (base64Image) => {
     // 1. Validate Key
     if (!API_KEY) {
-      console.error("API Key is missing. Please check your .env file or Vercel settings.");
-      return { error: "Configuration Error: API Key is missing." };
+      console.error("Groq API Key is missing. Please check your .env file or Vercel settings.");
+      return { error: "Configuration Error: Groq API Key is missing." };
     }
 
-    const plantSchema = {
-      type: Type.OBJECT,
-      properties: {
-        plants: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              scientificName: { type: Type.STRING },
-              commonName: { type: Type.STRING },
-              confidenceScore: { type: Type.NUMBER },
-              isEdible: { type: Type.BOOLEAN },
-              edibleParts: { type: Type.ARRAY, items: { type: Type.STRING } },
-              description: { type: Type.STRING },
-              toxicParts: { type: Type.ARRAY, items: { type: Type.STRING } },
-              safetyWarnings: { type: Type.ARRAY, items: { type: Type.STRING } },
-              funFact: { type: Type.STRING },
-              videoContext: { type: Type.STRING }
-            },
-            required: ["scientificName", "commonName", "isEdible", "description"],
-          }
-        }
-      },
-      required: ["plants"],
-    };
-
     try {
-      // 2. Call Gemini
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [
+      // 2. Call Groq LLaMA Vision
+      // We explicitly ask for the JSON structure required by the frontend
+      const completion = await groq.chat.completions.create({
+        model: "llama-3.2-90b-vision-preview",
+        messages: [
           {
-            parts: [
-              { inlineData: { mimeType: 'image/jpeg', data: base64Image } },
-              { text: "Identify this plant. Even if it is dry, withered, or a distant tree, make your best guess. Do not return unknown. Return valid JSON." }
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `Identify this plant. Even if it is dry, withered, or a distant tree, make your best guess. 
+                Return a valid JSON object with the following structure:
+                {
+                  "plants": [
+                    {
+                      "scientificName": "string",
+                      "commonName": "string",
+                      "confidenceScore": number (0-1),
+                      "isEdible": boolean,
+                      "edibleParts": ["string"],
+                      "description": "string",
+                      "toxicParts": ["string"],
+                      "safetyWarnings": ["string"],
+                      "funFact": "string",
+                      "videoContext": "recipes" or "uses"
+                    }
+                  ]
+                }
+                Do not include markdown formatting like \`\`\`json. Return only the JSON.`
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Image}`
+                }
+              }
             ]
           }
         ],
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: plantSchema,
-          safetySettings: [
-            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-          ]
-        },
+        temperature: 0.1,
+        response_format: { type: "json_object" },
+        stop: null
       });
 
       // 3. Robust Parsing
-      const text = response.text || "{}";
+      const text = completion.choices[0]?.message?.content || "{}";
       let data = {};
       
       try {
           data = JSON.parse(text);
       } catch (e) {
-          // Fallback regex to extract JSON if the model adds markdown formatting
+          console.error("JSON Parse Error", e);
+          // Fallback regex
           const jsonMatch = text.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             try {
@@ -96,41 +97,67 @@ export const plantDexService = {
           date: new Date().toLocaleDateString(),
           image: `data:image/jpeg;base64,${base64Image}`
         });
+      } else {
+         // Fallback if structure is wrong but we got a response
+         if (!data.plants && text.includes("commonName")) {
+             // Try to wrap single object in array if model messed up structure
+             plants = [{ ...data, id: Date.now() }];
+         }
       }
 
       return { plants };
 
     } catch (error) {
-      console.error("AI Error:", error);
-      // Return the actual error message to the UI
+      console.error("Groq API Error:", error);
       return { error: error.message || "Unable to identify plant." };
     }
   },
 
   findSpecificRecipes: async (plantName) => {
     try {
-      // Fix: Removed responseMimeType because it conflicts with googleSearch tool
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: `Search for "best YouTube videos for ${plantName} recipes or uses". 
-        Based on the search results, create a JSON list of 3 recommended videos.
-        Format: [{"title": "Video Title", "channel": "Channel Name", "link": "https://youtube.com/watch?v=...", "duration": "5:00"}]
-        Return ONLY the JSON block.`,
-        config: { 
-          tools: [{ googleSearch: {} }] 
-        }
+      // Groq does not have internet access/grounding tools like Gemini.
+      // We will generate suggested video titles and construct standard YouTube Search URLs.
+      
+      const completion = await groq.chat.completions.create({
+        model: "llama-3.1-70b-versatile",
+        messages: [
+            {
+                role: "system",
+                content: "You are a helper that generates YouTube video search queries."
+            },
+            {
+                role: "user",
+                content: `Generate 3 popular video title ideas for "${plantName} recipes or uses". 
+                Return strictly a JSON array of strings. Example: ["How to cook Plant", "Plant benefits"]`
+            }
+        ],
+        response_format: { type: "json_object" }
       });
-      
-      const text = response.text || "";
-      // Regex to extract the JSON array from the markdown response
-      const match = text.match(/\[[\s\S]*\]/);
-      
-      if (match) {
-        return JSON.parse(match[0]);
-      } 
-      
-      // Smart Fallback: If AI fails to format JSON, return direct search links
-      // This ensures the user always gets clickable content instead of an empty list
+
+      const text = completion.choices[0]?.message?.content || "{}";
+      let titles = [];
+      try {
+          const parsed = JSON.parse(text);
+          // Handle various possible JSON outputs from LLaMA
+          if (parsed.titles) titles = parsed.titles;
+          else if (Array.isArray(parsed)) titles = parsed;
+          else if (parsed.queries) titles = parsed.queries;
+          else titles = Object.values(parsed)[0] || [];
+      } catch (e) {
+          titles = [`${plantName} Recipe`, `${plantName} Uses`, `${plantName} Care`];
+      }
+
+      // Construct clickable objects
+      return titles.slice(0, 3).map((title, idx) => ({
+          title: title,
+          channel: "YouTube Search",
+          link: `https://www.youtube.com/results?search_query=${encodeURIComponent(title)}`,
+          duration: "Watch"
+      }));
+
+    } catch (e) {
+      console.warn("Search generation failed", e);
+      // Fallback
       return [
          { 
            title: `Search: ${plantName} Recipes`, 
@@ -145,11 +172,6 @@ export const plantDexService = {
            duration: "Link" 
          }
       ];
-
-    } catch (e) {
-      console.warn("Search failed", e);
-      // Return empty array to trigger the generic button fallback in UI
-      return [];
     }
   },
 
