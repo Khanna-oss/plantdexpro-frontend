@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Info, Youtube, ShieldAlert, CheckCircle2, Leaf, Sparkles, Stethoscope, Share2, Lightbulb, Loader2 } from 'lucide-react';
+import { Heart, Info, Youtube, ShieldAlert, CheckCircle2, Leaf, Sparkles, Stethoscope, Share2, Lightbulb, Loader2, Play } from 'lucide-react';
 import { plantDexService } from '../services/plantDexService.js';
 
 const EdibleBadge = ({ isEdible }) => {
@@ -39,6 +40,91 @@ const ConfidenceMeter = ({ score }) => {
                   animate={{ width: `${percentage}%` }}
                   transition={{ duration: 1, ease: "circOut" }}
                 />
+            </div>
+        </div>
+    );
+};
+
+// --- Video Player Logic ---
+
+const getYoutubeId = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+};
+
+const VideoPlayer = ({ video }) => {
+    const [isPlaying, setIsPlaying] = useState(false);
+    const videoId = getYoutubeId(video.link);
+
+    // If we can't extract an ID (e.g. it's a search result link), render a smart button card
+    if (!videoId) {
+        return (
+            <a href={video.link} target="_blank" rel="noreferrer" className="block p-4 rounded-xl bg-gray-50 dark:bg-gray-800/80 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-700 group">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <Youtube size={24} />
+                    </div>
+                    <div>
+                        <p className="font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 transition-colors">{video.title}</p>
+                        <p className="text-xs text-gray-500">{video.channel} • {video.duration}</p>
+                        <p className="text-xs text-blue-600 mt-1 font-semibold flex items-center gap-1">
+                            Click to open in YouTube <Youtube size={12}/>
+                        </p>
+                    </div>
+                </div>
+            </a>
+        );
+    }
+
+    // Embeddable Video Player
+    return (
+        <div className="bg-black/5 dark:bg-black/20 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+            {isPlaying ? (
+                <div className="relative pt-[56.25%] bg-black">
+                    <iframe
+                        className="absolute top-0 left-0 w-full h-full"
+                        src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}
+                        title={video.title}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                    ></iframe>
+                </div>
+            ) : (
+                <div className="relative cursor-pointer group" onClick={() => setIsPlaying(true)}>
+                    {/* High Quality Thumbnail */}
+                    <img 
+                        src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`} 
+                        alt={video.title}
+                        className="w-full h-56 sm:h-72 object-cover" 
+                        loading="lazy"
+                    />
+                    
+                    {/* Dark Overlay */}
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                         {/* Play Button */}
+                         <div className="w-16 h-16 bg-red-600/90 rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform backdrop-blur-sm">
+                            <Play fill="white" className="text-white ml-1.5" size={32} />
+                         </div>
+                    </div>
+                    
+                    {/* Duration Badge */}
+                    <div className="absolute bottom-3 right-3 bg-black/80 text-white text-xs font-bold px-2 py-1 rounded backdrop-blur-md border border-white/10">
+                        {video.duration}
+                    </div>
+                </div>
+            )}
+            
+            {/* Video Details */}
+            <div className="p-5 bg-white dark:bg-gray-800">
+                <h4 className="font-bold text-gray-900 dark:text-white text-lg leading-tight mb-2 line-clamp-2">
+                    {video.title}
+                </h4>
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                    <Youtube size={16} className="text-red-600"/>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">{video.channel}</span>
+                </div>
             </div>
         </div>
     );
@@ -151,8 +237,8 @@ export const ResultCard = ({ plant, index }) => {
           </div>
 
           <div className="pt-8 border-t border-gray-100 dark:border-gray-800">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5 flex items-center gap-2">
-                  {plant.videoContext === 'recipes' ? <Youtube size={16} className="text-red-600"/> : <Stethoscope size={16} className="text-blue-600"/>}
+              <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                  {plant.videoContext === 'recipes' ? <Youtube size={18} className="text-red-600"/> : <Stethoscope size={18} className="text-blue-600"/>}
                   {plant.videoContext === 'recipes' ? 'Curated Recipes' : 'Beneficial Uses & Care'}
               </h3>
 
@@ -161,19 +247,10 @@ export const ResultCard = ({ plant, index }) => {
                       <Loader2 className="animate-spin w-4 h-4" /> Finding the best videos...
                   </div>
               ) : videos.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div className="space-y-6"> 
+                      {/* ^^^ Changed from grid to space-y-6 to show videos one after another */}
                       {videos.map((v, i) => (
-                          <a key={i} href={v.link} target="_blank" rel="noreferrer" className="group/card block relative rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:ring-2 hover:ring-offset-1 hover:ring-emerald-500 transition-all border border-gray-100 dark:border-gray-700">
-                              <div className="p-4 bg-gray-50 dark:bg-gray-800/80 h-full flex flex-col justify-between">
-                                  <div>
-                                    <p className="text-xs font-bold text-gray-900 dark:text-white line-clamp-2 leading-tight mb-2 group-hover/card:text-emerald-600 transition-colors">{v.title}</p>
-                                    <p className="text-[10px] text-gray-500">{v.channel} • {v.duration || 'Video'}</p>
-                                  </div>
-                                  <div className="mt-2 flex items-center gap-1 text-[10px] text-red-600 font-bold">
-                                      <Youtube size={12} /> Watch Now
-                                  </div>
-                              </div>
-                          </a>
+                          <VideoPlayer key={i} video={v} />
                       ))}
                   </div>
               ) : (
