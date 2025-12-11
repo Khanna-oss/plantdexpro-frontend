@@ -7,8 +7,8 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
-      // Reverted to API_KEY for Gemini
-      'process.env.API_KEY': JSON.stringify(env.API_KEY || env.VITE_API_KEY || ''),
+      // FIX: Added 'env.API_Key' to match your Vercel screenshot settings
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || env.API_Key || env.VITE_API_KEY || ''),
       'process.env': {}
     },
     build: {
