@@ -109,17 +109,46 @@ export const plantDexService = {
 
   findSpecificRecipes: async (plantName) => {
     try {
+      // Fix: Removed responseMimeType because it conflicts with googleSearch tool
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: `Find 3 YouTube video titles and links for "${plantName}". Return JSON array [{title, channel, link, duration}].`,
-        config: { tools: [{ googleSearch: {} }], responseMimeType: "application/json" }
+        contents: `Search for "best YouTube videos for ${plantName} recipes or uses". 
+        Based on the search results, create a JSON list of 3 recommended videos.
+        Format: [{"title": "Video Title", "channel": "Channel Name", "link": "https://youtube.com/watch?v=...", "duration": "5:00"}]
+        Return ONLY the JSON block.`,
+        config: { 
+          tools: [{ googleSearch: {} }] 
+        }
       });
       
       const text = response.text || "";
+      // Regex to extract the JSON array from the markdown response
       const match = text.match(/\[[\s\S]*\]/);
-      return match ? JSON.parse(match[0]) : [];
+      
+      if (match) {
+        return JSON.parse(match[0]);
+      } 
+      
+      // Smart Fallback: If AI fails to format JSON, return direct search links
+      // This ensures the user always gets clickable content instead of an empty list
+      return [
+         { 
+           title: `Search: ${plantName} Recipes`, 
+           channel: "YouTube Search", 
+           link: `https://www.youtube.com/results?search_query=${encodeURIComponent(plantName)}+recipe`, 
+           duration: "Link" 
+         },
+         { 
+           title: `Search: ${plantName} Care Guide`, 
+           channel: "YouTube Search", 
+           link: `https://www.youtube.com/results?search_query=${encodeURIComponent(plantName)}+care`, 
+           duration: "Link" 
+         }
+      ];
+
     } catch (e) {
       console.warn("Search failed", e);
+      // Return empty array to trigger the generic button fallback in UI
       return [];
     }
   },
