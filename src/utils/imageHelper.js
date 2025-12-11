@@ -5,53 +5,58 @@
  * @param {File} file - The uploaded image file
  * @returns {Promise<string>} - Base64 string of the compressed image (raw, no data URI prefix)
  */
-export const compressImage = (file) => {
+const compressImage = (file) => {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
+    try {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
       
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
         
-        // Max dimension 800px ensures payload is well under 1MB
-        // This prevents 413 Payload Too Large errors and timeouts
-        const MAX_SIZE = 800;
-        
-        if (width > height) {
-          if (width > MAX_SIZE) {
-            height *= MAX_SIZE / width;
-            width = MAX_SIZE;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Max dimension 800px ensures payload is well under 1MB
+          const MAX_SIZE = 800;
+          
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
           }
-        } else {
-          if (height > MAX_SIZE) {
-            width *= MAX_SIZE / height;
-            height = MAX_SIZE;
-          }
-        }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Compress to JPEG at 70% quality
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          
+          // Remove the "data:image/jpeg;base64," prefix
+          const base64 = dataUrl.split(',')[1];
+          resolve(base64);
+        };
         
-        canvas.width = width;
-        canvas.height = height;
-        
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        // Compress to JPEG at 60% quality for maximum compatibility
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-        
-        // Remove the "data:image/jpeg;base64," prefix to get raw base64 for the API
-        const base64 = dataUrl.split(',')[1];
-        resolve(base64);
+        img.onerror = () => reject(new Error("Failed to load image for compression"));
       };
       
-      img.onerror = (err) => reject(new Error("Failed to load image for compression"));
-    };
-    
-    reader.onerror = (err) => reject(new Error("Failed to read file"));
+      reader.onerror = () => reject(new Error("Failed to read file"));
+    } catch (err) {
+      reject(err);
+    }
   });
 };
+
+export { compressImage };

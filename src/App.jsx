@@ -10,14 +10,6 @@ import { compressImage } from './utils/imageHelper.js';
 import { motion } from 'framer-motion';
 import { XCircle, History } from 'lucide-react';
 
-const ERROR_RHYMES = [
-  "Oh no! The photo's a blur, I can't be sure. Try steady hands for a cure!",
-  "This leaf is a mystery, it's hidden you see. Snap a clear one for me!",
-  "Too dark to spark a thought in my brain. Please try the camera again!",
-  "I'm stumped by this view, it's sad but true. A closer shot is overdue.",
-  "My AI eyes are feeling weak, that image quality is quite bleak."
-];
-
 const App = () => {
   const [theme, toggleTheme] = useDarkMode();
   const [results, setResults] = useState([]);
@@ -26,7 +18,6 @@ const App = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [history, setHistory] = useState([]);
 
-  // Load history on mount
   useEffect(() => {
     setHistory(plantDexService.getHistory());
   }, []);
@@ -37,36 +28,28 @@ const App = () => {
     setResults([]);
 
     try {
-      // 1. Create a local preview immediately
       const objectUrl = URL.createObjectURL(file);
       setImagePreview(objectUrl);
 
-      // 2. Compress the image before sending to API
-      // This is crucial for high-res images to avoid timeouts
+      // Compress image to ensure upload success
       const base64Image = await compressImage(file);
       
-      // 3. Send to Service
       const data = await plantDexService.identifyPlant(base64Image);
       
-      if (data.error) throw new Error(data.error);
+      if (data.error) {
+        throw new Error(data.error);
+      }
       
-      setResults(data.plants || []);
-      
-      // Update history state immediately
+      if (!data.plants || data.plants.length === 0) {
+        throw new Error("No plants identified. Try a closer shot.");
+      }
+
+      setResults(data.plants);
       setHistory(plantDexService.getHistory());
 
-      if (!data.plants || data.plants.length === 0) {
-        setError("I searched high and low, but this plant I do not know.");
-      }
     } catch (e) {
       console.error(e);
-      // If it's a specific error message from the service, show it. Otherwise rhyme.
-      if (e.message && !e.message.includes('Failed to fetch')) {
-         setError(e.message);
-      } else {
-         const randomRhyme = ERROR_RHYMES[Math.floor(Math.random() * ERROR_RHYMES.length)];
-         setError(randomRhyme);
-      }
+      setError(e.message || "Failed to process image.");
     } finally {
       setIsLoading(false);
     }
@@ -124,7 +107,6 @@ const App = () => {
           </div>
         )}
 
-        {/* History Section */}
         {!isLoading && results.length === 0 && history.length > 0 && (
           <div className="max-w-5xl mx-auto mt-12 animate-fade-in">
             <div className="flex items-center gap-2 mb-4 text-gray-400 uppercase text-xs font-bold tracking-widest">

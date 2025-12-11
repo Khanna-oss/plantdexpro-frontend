@@ -1,19 +1,25 @@
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/genai";
 
-// Ensure we grab the key from process.env (injected by Vite) or fallback to import.meta.env
-const apiKey = process.env.API_KEY || (import.meta && import.meta.env && import.meta.env.VITE_API_KEY);
-const ai = new GoogleGenAI({ apiKey: apiKey });
+// Robust API Key retrieval
+let apiKey = '';
+try {
+  apiKey = process.env.API_KEY;
+} catch (e) {
+  // process not defined, ignore
+}
 
+// Fallback for Vite environments if process.env.API_KEY didn't work directly
+if (!apiKey && import.meta && import.meta.env) {
+  apiKey = import.meta.env.VITE_API_KEY;
+}
+
+const ai = new GoogleGenAI({ apiKey: apiKey });
 const HISTORY_KEY = 'plantdex_history';
 
 export const plantDexService = {
-  /**
-   * Identifies the plant using Gemini Vision.
-   */
   identifyPlant: async (base64Image) => {
-    // 1. Basic Validation
     if (!apiKey) {
-      return { error: "API Key is missing. Please check your configuration." };
+      return { error: "Configuration Error: API Key is missing." };
     }
 
     const plantSchema = {
@@ -21,26 +27,21 @@ export const plantDexService = {
       properties: {
         plants: {
           type: Type.ARRAY,
-          description: "An array containing information about the identified plant(s).",
           items: {
             type: Type.OBJECT,
             properties: {
-              scientificName: { type: Type.STRING, description: "The scientific name of the plant." },
-              commonName: { type: Type.STRING, description: "The common name of the plant." },
-              confidenceScore: { type: Type.NUMBER, description: "A confidence score between 0 and 1." },
-              isEdible: { type: Type.BOOLEAN, description: "Is the plant edible?" },
-              edibleParts: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-                description: "List of edible parts."
-              },
-              description: { type: Type.STRING, description: "Brief description." },
+              scientificName: { type: Type.STRING },
+              commonName: { type: Type.STRING },
+              confidenceScore: { type: Type.NUMBER },
+              isEdible: { type: Type.BOOLEAN },
+              edibleParts: { type: Type.ARRAY, items: { type: Type.STRING } },
+              description: { type: Type.STRING },
               toxicParts: { type: Type.ARRAY, items: { type: Type.STRING } },
               safetyWarnings: { type: Type.ARRAY, items: { type: Type.STRING } },
-              funFact: { type: Type.STRING, description: "A fun or interesting fact about the plant." },
-              videoContext: { type: Type.STRING, description: "Either 'recipes' or 'uses' depending on edibility." }
+              funFact: { type: Type.STRING },
+              videoContext: { type: Type.STRING }
             },
-            required: ["scientificName", "commonName", "confidenceScore", "isEdible", "edibleParts", "description", "funFact", "videoContext"],
+            required: ["scientificName", "commonName", "isEdible", "description"],
           }
         }
       },
@@ -54,14 +55,13 @@ export const plantDexService = {
           {
             parts: [
               { inlineData: { mimeType: 'image/jpeg', data: base64Image } },
-              { text: "Identify this plant. Even if the plant is dry, withered, common, or partially visible, provide your best guess. Do not return 'unknown'. If it's a landscape, identify the dominant tree or shrub. Output strict JSON." }
+              { text: "Identify this plant. Even if dry, withered, or distant, provide the best possible identification. If it is a generic tree or shrub, identify the likely species. Do not fail. Return valid JSON." }
             ]
           }
         ],
         config: {
           responseMimeType: "application/json",
           responseSchema: plantSchema,
-          // CRITICAL: Disable safety filters to allow identification of withered/organic matter
           safetySettings: [
             { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
             { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -71,94 +71,63 @@ export const plantDexService = {
         },
       });
 
-      // Robust JSON extraction
       const text = response.text || "{}";
       let data = {};
-      
       try {
-          // Try standard parse
           data = JSON.parse(text);
       } catch (e) {
-          // Fallback: Extract JSON object using regex if markdown/extra text exists
           const jsonMatch = text.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-              data = JSON.parse(jsonMatch[0]);
-          } else {
-              console.error("Raw Response:", text);
-              throw new Error("Invalid response format from AI");
-          }
+          if (jsonMatch) data = JSON.parse(jsonMatch[0]);
       }
       
       let plants = data.plants || [];
 
-      // Save top result to history
       if (plants.length > 0) {
         const topPlant = plants[0];
-        // Generate a unique ID for React rendering
         plants = plants.map((p, idx) => ({ ...p, id: Date.now() + idx }));
-
-        const historyItem = {
-          name: topPlant.commonName,
+        
+        plantDexService.saveToHistory({
+          name: topPlant.commonName || topPlant.scientificName,
           date: new Date().toLocaleDateString(),
           image: `data:image/jpeg;base64,${base64Image}`
-        };
-        plantDexService.saveToHistory(historyItem);
+        });
       }
 
       return { plants };
 
     } catch (error) {
-      console.error("Identification Error:", error);
-      // RETURN THE REAL ERROR
-      return { error: error.message || "An unexpected error occurred." };
+      console.error("AI Error:", error);
+      return { error: error.message || "Unable to identify plant." };
     }
   },
 
-  /**
-   * Finds specific recipes or videos using Gemini Search Grounding.
-   */
   findSpecificRecipes: async (plantName) => {
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: `Find 3 high-quality YouTube video titles and URLs for "${plantName} recipes" or "how to use ${plantName}". Return a JSON array of objects with keys: title, channel, link, duration.`,
-        config: {
-          tools: [{ googleSearch: {} }],
-          responseMimeType: "application/json"
-        }
+        contents: `Find 3 YouTube video titles/links for "${plantName}". Return JSON array [{title, channel, link, duration}].`,
+        config: { tools: [{ googleSearch: {} }], responseMimeType: "application/json" }
       });
-      
-      const text = response.text || "[]";
-      // Simple regex cleanup for JSON array
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
-      const jsonStr = jsonMatch ? jsonMatch[0] : "[]";
-      
-      return JSON.parse(jsonStr);
+      const match = (response.text || "").match(/\[[\s\S]*\]/);
+      return match ? JSON.parse(match[0]) : [];
     } catch (e) {
-      console.warn("Recipe search failed, falling back to empty list", e);
       return [];
     }
   },
 
   getHistory: () => {
     try {
-      const stored = localStorage.getItem(HISTORY_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch (e) {
-      return [];
-    }
+      return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+    } catch (e) { return []; }
   },
 
   saveToHistory: (item) => {
     try {
       const history = plantDexService.getHistory();
-      // Avoid duplicates at the top (simple check)
-      if (history.length > 0 && history[0].image === item.image) return;
-      
-      const newHistory = [item, ...history].slice(0, 10); // Keep last 10
+      // Remove duplicates based on name to keep list fresh
+      const filtered = history.filter(h => h.name !== item.name);
+      const newHistory = [item, ...filtered].slice(0, 10);
       localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
-    } catch (e) {
-      console.error("Failed to save history", e);
-    }
+    } catch (e) { console.error(e); }
   }
 };
