@@ -46,7 +46,7 @@ const ConfidenceMeter = ({ score }) => {
     );
 };
 
-export const ResultCard = ({ plant, index }) => {
+export const ResultCard = ({ plant, index, originalImage }) => {
   const [videos, setVideos] = useState([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
   const [activeVideoUrl, setActiveVideoUrl] = useState(null);
@@ -188,6 +188,7 @@ export const ResultCard = ({ plant, index }) => {
                                 video={v} 
                                 isActive={activeVideoUrl === v.link}
                                 onPlay={() => setActiveVideoUrl(v.link)}
+                                plantImage={originalImage}
                              />
                              {/* Subtle divider except for last item */}
                              {i < videos.length - 1 && (
