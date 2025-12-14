@@ -188,7 +188,6 @@ export const ResultCard = ({ plant, index, originalImage }) => {
                                 video={v} 
                                 isActive={activeVideoUrl === v.link}
                                 onPlay={() => setActiveVideoUrl(v.link)}
-                                plantImage={originalImage}
                              />
                              {/* Subtle divider except for last item */}
                              {i < videos.length - 1 && (

@@ -33,9 +33,28 @@ export const plantDexService = {
               toxicParts: { type: Type.ARRAY, items: { type: Type.STRING } },
               safetyWarnings: { type: Type.ARRAY, items: { type: Type.STRING } },
               funFact: { type: Type.STRING },
-              videoContext: { type: Type.STRING }
+              videoContext: { type: Type.STRING },
+              // New fields for specific nutrition data
+              nutrients: {
+                type: Type.OBJECT,
+                properties: {
+                  vitamins: { type: Type.STRING, description: "List of key vitamins (e.g., A, C, K) or 'N/A'" },
+                  minerals: { type: Type.STRING, description: "List of key minerals (e.g., Iron, Calcium) or 'N/A'" },
+                  proteins: { type: Type.STRING, description: "Protein content level or 'N/A'" }
+                }
+              },
+              healthHints: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    label: { type: Type.STRING, description: "Short benefit title (e.g., 'Skin Soothing')" },
+                    desc: { type: Type.STRING, description: "1 sentence explaining the specific benefit for THIS plant." }
+                  }
+                }
+              }
             },
-            required: ["scientificName", "commonName", "isEdible", "description"],
+            required: ["scientificName", "commonName", "isEdible", "description", "videoContext"],
           }
         }
       },
@@ -50,7 +69,7 @@ export const plantDexService = {
           {
             parts: [
               { inlineData: { mimeType: 'image/jpeg', data: base64Image } },
-              { text: "Identify this plant. Even if it is dry, withered, or a distant tree, make your best guess. Do not return unknown. Return valid JSON." }
+              { text: "Identify this plant. Provide scientific name, common name, and description. If edible, provide TRUE specific nutritional data (Vitamins, Minerals) and specific health benefits unique to this plant. If not edible, leave nutrition empty. Do not return generic text. Return valid JSON." }
             ]
           }
         ],
@@ -73,7 +92,6 @@ export const plantDexService = {
       try {
           data = JSON.parse(text);
       } catch (e) {
-          // Fallback regex to extract JSON if the model adds markdown formatting
           const jsonMatch = text.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             try {
@@ -89,7 +107,6 @@ export const plantDexService = {
       // 4. Save to History
       if (plants.length > 0) {
         const topPlant = plants[0];
-        // Add ID for React keys
         plants = plants.map((p, idx) => ({ ...p, id: Date.now() + idx }));
         
         plantDexService.saveToHistory({
@@ -103,15 +120,12 @@ export const plantDexService = {
 
     } catch (error) {
       console.error("AI Error:", error);
-      // Return the actual error message to the UI
       return { error: error.message || "Unable to identify plant." };
     }
   },
 
   findSpecificRecipes: async (plantName) => {
     try {
-      // Use Google Search Grounding to find actual videos
-      // Note: We do NOT set responseMimeType to JSON here because it conflicts with the tool
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: `Find 3 YouTube video titles and links for "${plantName} recipes" or "${plantName} uses". Return a JSON array of objects with keys: title, channel, link, duration. Format the output as a JSON string block.`,
@@ -121,12 +135,10 @@ export const plantDexService = {
       });
       
       const text = response.text || "";
-      // Extract JSON array from the response text
       const match = text.match(/\[[\s\S]*\]/);
       return match ? JSON.parse(match[0]) : [];
     } catch (e) {
       console.warn("Search failed", e);
-      // Smart Fallback to clickable search links
       return [
          { 
            title: `Search: ${plantName} Recipes`, 
