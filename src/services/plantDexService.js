@@ -1,4 +1,6 @@
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/genai";
+import { healthProfileService } from "./healthProfileService";
+import { videoRecommendationService } from "./videoRecommendationService";
 
 // Access the API key injected by Vite.
 const API_KEY = process.env.API_KEY || '';
@@ -16,6 +18,8 @@ export const plantDexService = {
       return { error: "System configuration error. Please contact support." };
     }
 
+    // SIMPLIFIED SCHEMA: We rely on the specialized service for deep details now,
+    // reducing the load on the vision model and preventing hallucinations.
     const plantSchema = {
       type: Type.OBJECT,
       properties: {
@@ -34,14 +38,14 @@ export const plantDexService = {
               safetyWarnings: { type: Type.ARRAY, items: { type: Type.STRING } },
               funFact: { type: Type.STRING },
               videoContext: { type: Type.STRING },
-              specificUsage: { type: Type.STRING, description: "Precise, real instructions on how to use this specific plant (e.g. 'Boil leaves for 10 mins', 'Gel can be applied topically'). Do NOT provide generic advice." },
-              // New fields for specific nutrition data
+              // We keep these optional in the vision schema; if they come back empty, we fill them later.
+              specificUsage: { type: Type.STRING, description: "Brief usage instructions." },
               nutrients: {
                 type: Type.OBJECT,
                 properties: {
-                  vitamins: { type: Type.STRING, description: "List of key vitamins (e.g., A, C, K) or 'N/A'" },
-                  minerals: { type: Type.STRING, description: "List of key minerals (e.g., Iron, Calcium) or 'N/A'" },
-                  proteins: { type: Type.STRING, description: "Protein content level or 'N/A'" }
+                  vitamins: { type: Type.STRING },
+                  minerals: { type: Type.STRING },
+                  proteins: { type: Type.STRING }
                 }
               },
               healthHints: {
@@ -49,13 +53,13 @@ export const plantDexService = {
                 items: {
                   type: Type.OBJECT,
                   properties: {
-                    label: { type: Type.STRING, description: "Short benefit title (e.g., 'Skin Soothing')" },
-                    desc: { type: Type.STRING, description: "1 sentence explaining the specific benefit for THIS plant." }
+                    label: { type: Type.STRING },
+                    desc: { type: Type.STRING }
                   }
                 }
               }
             },
-            required: ["scientificName", "commonName", "isEdible", "description", "videoContext", "specificUsage"],
+            required: ["scientificName", "commonName", "isEdible", "description", "videoContext"],
           }
         }
       },
@@ -70,7 +74,7 @@ export const plantDexService = {
           {
             parts: [
               { inlineData: { mimeType: 'image/jpeg', data: base64Image } },
-              { text: "Identify this plant with high accuracy. Provide scientific name, common name, and a detailed description. If edible, provide TRUE specific nutritional data and SPECIFIC usage instructions (culinary or medicinal). If toxic, explain why. Do not return generic filler text. Return valid JSON." }
+              { text: "Identify this plant with high accuracy. Provide scientific name, common name, and a detailed description. If edible, provide nutritional data (vitamins, minerals) and specific usage. If toxic, explain why. Return valid JSON." }
             ]
           }
         ],
@@ -105,13 +109,28 @@ export const plantDexService = {
       
       let plants = data.plants || [];
 
-      // 4. Save to History
+      // 4. ENHANCE DATA WITH HEALTH PROFILE SERVICE
+      // This is the new backend logic extension:
       if (plants.length > 0) {
-        const topPlant = plants[0];
-        plants = plants.map((p, idx) => ({ ...p, id: Date.now() + idx }));
+        // Process the primary result
+        const p = plants[0];
+        if (p.isEdible && p.scientificName) {
+           // Fetch deep health profile
+           const richProfile = await healthProfileService.getProfile(p.commonName, p.scientificName, true);
+           if (richProfile) {
+             // Merge/Overwrite with high-quality text data
+             p.nutrients = richProfile.nutrients || p.nutrients;
+             p.healthHints = richProfile.healthHints || p.healthHints;
+             p.specificUsage = richProfile.specificUsage || p.specificUsage;
+           }
+        }
         
+        // Add ID for React keys
+        plants = plants.map((pl, idx) => ({ ...pl, id: Date.now() + idx }));
+
+        // Save to history
         plantDexService.saveToHistory({
-          name: topPlant.commonName || topPlant.scientificName,
+          name: p.commonName || p.scientificName,
           date: new Date().toLocaleDateString(),
           image: `data:image/jpeg;base64,${base64Image}`
         });
@@ -141,62 +160,16 @@ export const plantDexService = {
   },
 
   findSpecificRecipes: async (plantName) => {
+    // Delegating to the new Video Recommendation Service
+    // This allows for caching and smarter context handling
     try {
-      // STRICT PROMPT: Ask for DIRECT video links
-      // We instruct the model to use the search tool to find real YouTube links.
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: `Search for 3 popular YouTube videos about "${plantName} recipes" or "${plantName} care". 
-        Extract the video title, channel name, and the DIRECT YouTube URL (must be youtube.com/watch?v=...).
-        Return a JSON array of objects with keys: title, channel, link, duration.`,
-        config: { 
-          tools: [{ googleSearch: {} }],
-          responseMimeType: "application/json"
-        }
-      });
-      
-      const text = response.text || "";
-      // Try to parse JSON directly from the response
-      let videos = [];
-      try {
-        const jsonMatch = text.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-            videos = JSON.parse(jsonMatch[0]);
-        } else {
-            // Fallback: If model didn't return JSON, try to parse it manually if it returns a list
-             videos = [];
-        }
-      } catch(e) {
-        console.warn("JSON parse failed for videos", e);
-      }
-
-      // Filter for valid YouTube links
-      const validVideos = videos.filter(v => v.link && v.link.includes('youtube.com/watch'));
-
-      if (validVideos.length > 0) {
-          return validVideos;
-      }
-      
-      // If AI failed to give valid JSON links, we return a smart fallback
-      // that at least looks better than a generic search link.
-      return [
-         { 
-           title: `${plantName} Guide & Uses`, 
-           channel: "YouTube", 
-           link: `https://www.youtube.com/results?search_query=${encodeURIComponent(plantName)}+guide`, 
-           duration: "Watch" 
-         },
-         {
-            title: `How to use ${plantName}`, 
-            channel: "YouTube", 
-            link: `https://www.youtube.com/results?search_query=${encodeURIComponent(plantName)}+uses`, 
-            duration: "Watch"
-         }
-      ];
-
+        // We guess context based on a generic 'recipes' assumption here, 
+        // but in a fuller implementation we might pass isEdible from the component.
+        // For now, defaulting to 'recipes' (which the service handles gracefully if user searches for non-edible)
+        return await videoRecommendationService.getRecommendedVideos(plantName, 'recipes');
     } catch (e) {
-      console.warn("Search failed", e);
-      return [];
+        console.warn("Video fetch failed", e);
+        return [];
     }
   },
 
