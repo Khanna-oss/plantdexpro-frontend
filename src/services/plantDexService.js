@@ -34,6 +34,7 @@ export const plantDexService = {
               safetyWarnings: { type: Type.ARRAY, items: { type: Type.STRING } },
               funFact: { type: Type.STRING },
               videoContext: { type: Type.STRING },
+              specificUsage: { type: Type.STRING, description: "Precise, real instructions on how to use this specific plant (e.g. 'Boil leaves for 10 mins', 'Gel can be applied topically'). Do NOT provide generic advice." },
               // New fields for specific nutrition data
               nutrients: {
                 type: Type.OBJECT,
@@ -54,7 +55,7 @@ export const plantDexService = {
                 }
               }
             },
-            required: ["scientificName", "commonName", "isEdible", "description", "videoContext"],
+            required: ["scientificName", "commonName", "isEdible", "description", "videoContext", "specificUsage"],
           }
         }
       },
@@ -69,7 +70,7 @@ export const plantDexService = {
           {
             parts: [
               { inlineData: { mimeType: 'image/jpeg', data: base64Image } },
-              { text: "Identify this plant. Provide scientific name, common name, and description. If edible, provide TRUE specific nutritional data (Vitamins, Minerals) and specific health benefits unique to this plant. If not edible, leave nutrition empty. Do not return generic text. Return valid JSON." }
+              { text: "Identify this plant with high accuracy. Provide scientific name, common name, and a detailed description. If edible, provide TRUE specific nutritional data and SPECIFIC usage instructions (culinary or medicinal). If toxic, explain why. Do not return generic filler text. Return valid JSON." }
             ]
           }
         ],
@@ -126,33 +127,61 @@ export const plantDexService = {
 
   findSpecificRecipes: async (plantName) => {
     try {
+      // STRICT PROMPT: Ask for DIRECT video links
+      // We instruct the model to use the search tool to find real YouTube links.
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: `Find 3 YouTube video titles and links for "${plantName} recipes" or "${plantName} uses". Return a JSON array of objects with keys: title, channel, link, duration. Format the output as a JSON string block.`,
+        contents: `Search for 3 popular YouTube videos about "${plantName} recipes" or "${plantName} care". 
+        Extract the video title, channel name, and the DIRECT YouTube URL (must be youtube.com/watch?v=...).
+        Return a JSON array of objects with keys: title, channel, link, duration.`,
         config: { 
-          tools: [{ googleSearch: {} }] 
+          tools: [{ googleSearch: {} }],
+          responseMimeType: "application/json"
         }
       });
       
       const text = response.text || "";
-      const match = text.match(/\[[\s\S]*\]/);
-      return match ? JSON.parse(match[0]) : [];
-    } catch (e) {
-      console.warn("Search failed", e);
+      // Try to parse JSON directly from the response
+      let videos = [];
+      try {
+        const jsonMatch = text.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+            videos = JSON.parse(jsonMatch[0]);
+        } else {
+            // Fallback: If model didn't return JSON, try to parse it manually if it returns a list
+             videos = [];
+        }
+      } catch(e) {
+        console.warn("JSON parse failed for videos", e);
+      }
+
+      // Filter for valid YouTube links
+      const validVideos = videos.filter(v => v.link && v.link.includes('youtube.com/watch'));
+
+      if (validVideos.length > 0) {
+          return validVideos;
+      }
+      
+      // If AI failed to give valid JSON links, we return a smart fallback
+      // that at least looks better than a generic search link.
       return [
          { 
-           title: `Search: ${plantName} Recipes`, 
-           channel: "YouTube Search", 
-           link: `https://www.youtube.com/results?search_query=${encodeURIComponent(plantName)}+recipe`, 
-           duration: "Link" 
+           title: `${plantName} Guide & Uses`, 
+           channel: "YouTube", 
+           link: `https://www.youtube.com/results?search_query=${encodeURIComponent(plantName)}+guide`, 
+           duration: "Watch" 
          },
-         { 
-           title: `Search: ${plantName} Care Guide`, 
-           channel: "YouTube Search", 
-           link: `https://www.youtube.com/results?search_query=${encodeURIComponent(plantName)}+care`, 
-           duration: "Link" 
+         {
+            title: `How to use ${plantName}`, 
+            channel: "YouTube", 
+            link: `https://www.youtube.com/results?search_query=${encodeURIComponent(plantName)}+uses`, 
+            duration: "Watch"
          }
       ];
+
+    } catch (e) {
+      console.warn("Search failed", e);
+      return [];
     }
   },
 

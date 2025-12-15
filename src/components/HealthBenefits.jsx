@@ -7,6 +7,7 @@ export const HealthBenefits = ({ plant }) => {
   // Check if specific data exists
   const hasNutrients = plant.nutrients && (plant.nutrients.vitamins || plant.nutrients.minerals);
   const hasHints = plant.healthHints && plant.healthHints.length > 0;
+  const specificUsage = plant.specificUsage || "Consult a local expert for specific preparation instructions.";
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-[1.5rem] border border-emerald-100 dark:border-emerald-900/30 shadow-sm overflow-hidden mb-8">
@@ -76,8 +77,8 @@ export const HealthBenefits = ({ plant }) => {
             <Leaf className="text-blue-500 shrink-0 mt-0.5" size={16} />
             <div>
                 <h4 className="font-bold text-blue-800 dark:text-blue-200 text-xs uppercase tracking-wide mb-1">How to Use</h4>
-                <p className="text-blue-900 dark:text-blue-100 text-xs">
-                  For edible varieties, ensure thorough washing. Can often be used in salads, teas, or garnishes. Consult a local expert before consuming.
+                <p className="text-blue-900 dark:text-blue-100 text-xs leading-relaxed">
+                  {specificUsage}
                 </p>
             </div>
         </div>
