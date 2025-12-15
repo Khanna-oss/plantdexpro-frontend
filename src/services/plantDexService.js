@@ -13,7 +13,7 @@ export const plantDexService = {
     // 1. Validate Key
     if (!API_KEY) {
       console.error("API Key is missing. Please check your .env file or Vercel settings.");
-      return { error: "Configuration Error: API Key is missing." };
+      return { error: "System configuration error. Please contact support." };
     }
 
     const plantSchema = {
@@ -121,7 +121,22 @@ export const plantDexService = {
 
     } catch (error) {
       console.error("AI Error:", error);
-      return { error: error.message || "Unable to identify plant." };
+      
+      // FRIENDLY ERROR MAPPING
+      let userMessage = "Unable to identify plant. Please check your connection and try again.";
+      const errString = (error.message || error.toString()).toLowerCase();
+      
+      if (errString.includes("429") || errString.includes("quota") || errString.includes("exhausted") || errString.includes("limit")) {
+        userMessage = "Today's plant finding limit has been reached. Please try again tomorrow!";
+      } else if (errString.includes("safety") || errString.includes("blocked")) {
+        userMessage = "This image was flagged by our safety filters. Please try a different image.";
+      } else if (errString.includes("503") || errString.includes("overloaded")) {
+         userMessage = "AI services are currently busy. Please try again in a moment.";
+      } else if (errString.includes("key") || errString.includes("auth")) {
+          userMessage = "Service configuration error. Please contact the administrator.";
+      }
+
+      return { error: userMessage };
     }
   },
 

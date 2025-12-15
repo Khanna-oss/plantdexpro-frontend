@@ -96,7 +96,7 @@ const App = () => {
             role="alert"
           >
             <XCircle className="w-6 h-6 shrink-0" />
-            <span className="font-medium italic">"{error}"</span>
+            <span className="font-medium italic">{error}</span>
           </motion.div>
         )}
 
