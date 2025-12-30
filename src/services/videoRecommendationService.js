@@ -4,10 +4,10 @@ import { youtubeCacheService } from "./youtubeCacheService.js";
 import { validateVideoRecommendations } from "../utils/validateVideoRecommendations.js";
 
 const API_KEY = process.env.API_KEY || '';
-const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 export const videoRecommendationService = {
   getRecommendedVideos: async (plantName, context = 'recipes') => {
+    const ai = new GoogleGenAI({ apiKey: API_KEY });
     const cacheKey = youtubeCacheService.generateKey(plantName, context);
     
     const cachedVideos = youtubeCacheService.get(cacheKey);

@@ -4,9 +4,8 @@ import { validateNutritionAI } from "../utils/validateNutritionAI.js";
 import { aiConfidenceService } from "./aiConfidenceService.js";
 
 const API_KEY = process.env.API_KEY || '';
-const ai = new GoogleGenAI({ apiKey: API_KEY });
 
-const CACHE_KEY_PREFIX = 'plantdex_hp_v4_';
+const CACHE_KEY_PREFIX = 'plantdex_hp_v5_';
 
 export const healthProfileService = {
   getProfile: async (commonName, scientificName, isEdible) => {
@@ -22,6 +21,7 @@ export const healthProfileService = {
     }
 
     if (!API_KEY) return null;
+    const ai = new GoogleGenAI({ apiKey: API_KEY });
 
     const profileSchema = {
       type: Type.OBJECT,
@@ -53,9 +53,12 @@ export const healthProfileService = {
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
-        contents: `Generate a nutritional profile for ${scientificName} (${commonName}). 
-        Mandatory: Include specific vitamins (like A, C, E) and minerals (like Iron, Zinc) found in this plant. 
-        Do not use placeholder text. Provide 3 specific health hints and a clear usage protocol.`,
+        contents: `Research task for ${scientificName} (${commonName}):
+        1. Identify specific vitamins present (e.g. "Vitamin C, B-complex").
+        2. Identify specific minerals (e.g. "Iron, Potassium").
+        3. Provide 3 factual health observations.
+        4. Detail a standard preparation method.
+        MANDATORY: Do not use placeholder phrases like "Tracing" or "Unknown". Use established botanical science.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: profileSchema,
