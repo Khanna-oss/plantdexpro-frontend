@@ -1,11 +1,22 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { validateNutritionAI } from "../utils/validateNutritionAI.js";
 import { aiConfidenceService } from "./aiConfidenceService.js";
 
 const API_KEY = process.env.API_KEY || '';
+const CACHE_KEY_PREFIX = 'plantdex_hp_v6_';
 
-const CACHE_KEY_PREFIX = 'plantdex_hp_v5_';
+/**
+ * Internal Validator (Inlined to fix Vercel Resolution Error)
+ */
+const validateNutritionData = (data) => {
+  if (!data || typeof data !== 'object') return null;
+  const { nutrients } = data;
+  if (!nutrients || (!nutrients.vitamins && !nutrients.minerals)) return null;
+  // Basic hallucination filter
+  const text = JSON.stringify(data);
+  if (/miracle cure|secret botanical|magic properties/i.test(text)) return null;
+  return data;
+};
 
 export const healthProfileService = {
   getProfile: async (commonName, scientificName, isEdible) => {
@@ -16,7 +27,7 @@ export const healthProfileService = {
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
-        if (validateNutritionAI(parsed)) return parsed;
+        if (validateNutritionData(parsed)) return parsed;
       } catch (e) { localStorage.removeItem(cacheKey); }
     }
 
@@ -53,12 +64,12 @@ export const healthProfileService = {
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
-        contents: `Research task for ${scientificName} (${commonName}):
-        1. Identify specific vitamins present (e.g. "Vitamin C, B-complex").
-        2. Identify specific minerals (e.g. "Iron, Potassium").
-        3. Provide 3 factual health observations.
-        4. Detail a standard preparation method.
-        MANDATORY: Do not use placeholder phrases like "Tracing" or "Unknown". Use established botanical science.`,
+        contents: `Biochemical analysis task for ${scientificName} (${commonName}):
+        1. List actual vitamins (e.g., Vitamin C, Vitamin A, Folate).
+        2. List specific minerals (e.g., Calcium, Iron, Magnesium).
+        3. Provide 3 factual, science-backed health observations.
+        4. Detail safe preparation methods.
+        DO NOT use the word "Tracing" or other placeholders. Use specific nutritional names.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: profileSchema,
@@ -66,9 +77,8 @@ export const healthProfileService = {
         }
       });
 
-      const text = response.text || "{}";
-      const data = JSON.parse(text);
-      const validData = validateNutritionAI(data);
+      const data = JSON.parse(response.text || "{}");
+      const validData = validateNutritionData(data);
 
       if (validData) {
         validData.confidence = aiConfidenceService.calculateScore(0.98, 1.0, 'llm');

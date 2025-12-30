@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ShieldAlert, Sparkles, Share2, Lightbulb, Loader2, Youtube, Clock } from 'lucide-react';
+import { ShieldAlert, Sparkles, Share2, Lightbulb, Loader2, Youtube, Clock, Bookmark } from 'lucide-react';
 import { plantDexService } from '../services/plantDexService.js';
 import { YouTubePlayer } from './YouTubePlayer.jsx';
 import { HealthBenefits } from './HealthBenefits.jsx';
@@ -28,8 +28,8 @@ export const ResultCard = ({ plant, index }) => {
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: `I found ${plant.commonName}!`,
-        text: `Check out this ${plant.commonName} I identified with PlantDexPro.`,
+        title: `Identification: ${plant.commonName}`,
+        text: `Scientific Name: ${plant.scientificName}. Verified via PlantDexPro.`,
         url: window.location.href
       });
     }
@@ -40,104 +40,116 @@ export const ResultCard = ({ plant, index }) => {
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
-      className="w-full max-w-[800px] mx-auto mb-12"
+      className="w-full max-w-[850px] mx-auto mb-12"
     >
-      <div className={`relative bg-white dark:bg-gray-900 rounded-[2.5rem] border ${isLowConfidence ? 'border-amber-400/50 shadow-amber-500/10' : 'border-gray-200 dark:border-gray-800'} shadow-2xl overflow-hidden transition-all duration-500`}>
+      <div className={`relative bg-white dark:bg-gray-900 rounded-[3rem] border ${isLowConfidence ? 'border-amber-400/50 shadow-amber-500/10' : 'border-gray-200 dark:border-gray-800'} shadow-2xl overflow-hidden`}>
         
-        {/* Simplified Header without Image */}
-        <div className="pt-10 px-8 md:px-12 pb-6 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-br from-emerald-50/50 to-transparent dark:from-emerald-900/10">
-          <div className="flex justify-between items-start mb-6">
-            <div className="bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-800/50 flex items-center gap-2">
-              <Clock size={12} className="text-emerald-600 dark:text-emerald-400" />
-              <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-tighter">Analysis Verified {new Date().toLocaleDateString()}</span>
+        {/* Clean Header - NO IMAGES */}
+        <div className="pt-12 px-8 md:px-14 pb-10 bg-gradient-to-br from-emerald-500/10 via-transparent to-transparent">
+          <div className="flex justify-between items-center mb-10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/30">
+                <Bookmark size={20} />
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 block leading-none mb-1">Botanical Report</span>
+                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">ID: #{Math.random().toString(36).substr(2, 9).toUpperCase()}</span>
+              </div>
             </div>
-            <button onClick={handleShare} className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center border border-gray-200 dark:border-gray-700 hover:bg-emerald-500 hover:text-white transition-colors">
-              <Share2 size={16} />
-            </button>
+            <div className="flex gap-3">
+              <button onClick={handleShare} className="w-10 h-10 bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-all text-gray-400 hover:text-emerald-500">
+                <Share2 size={16} />
+              </button>
+            </div>
           </div>
 
-          <div className="mb-4">
-            <span className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400 mb-2 block">{plant.scientificName}</span>
-            <h2 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight leading-none mb-4">{plant.commonName}</h2>
+          <div className="space-y-4">
+            <h2 className="text-5xl md:text-6xl font-black text-gray-900 dark:text-white tracking-tight leading-[0.9] drop-shadow-sm">
+              {plant.commonName}
+            </h2>
+            <p className="text-sm font-bold text-emerald-600/70 dark:text-emerald-400 italic font-serif">
+              {plant.scientificName}
+            </p>
             
-            <div className="flex flex-wrap items-center gap-3">
-              <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${plant.isEdible ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border-rose-500/20'}`}>
-                {plant.isEdible ? '✓ Safe/Edible' : '⚠ Caution'}
+            <div className="flex flex-wrap items-center gap-4 pt-2">
+              <span className={`px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border ${plant.isEdible ? 'bg-emerald-500 text-white border-transparent shadow-lg shadow-emerald-500/20' : 'bg-rose-500 text-white border-transparent shadow-lg shadow-rose-500/20'}`}>
+                {plant.isEdible ? 'CULINARY SAFE' : 'CAUTION ADVISED'}
               </span>
               {isLowConfidence && (
-                <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-600 border-amber-500/20 flex items-center gap-1.5">
-                  <ShieldAlert size={12} /> Verification Recommended
+                <span className="px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest bg-amber-100 text-amber-700 border border-amber-200 flex items-center gap-2">
+                  <ShieldAlert size={14} /> MANUAL REVIEW SUGGESTED
                 </span>
               )}
             </div>
           </div>
         </div>
 
-        <div className="px-8 md:px-12 py-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-            {/* Left Column: Details */}
-            <div className="lg:col-span-7 space-y-10">
-              <div>
-                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Botanical Summary</h4>
-                <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed font-medium">
+        <div className="px-8 md:px-14 pb-14">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+            {/* Analysis Data */}
+            <div className="lg:col-span-7 space-y-12">
+              <section>
+                <h4 className="text-[10px] font-bold text-gray-300 uppercase tracking-[0.3em] mb-4">Morphological Profile</h4>
+                <p className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed font-medium">
                   {plant.description}
                 </p>
-              </div>
+              </section>
 
               {plant.funFact && (
-                <div className="p-6 rounded-3xl bg-emerald-500/5 border border-emerald-500/10 relative overflow-hidden">
-                  <Sparkles className="absolute -top-2 -right-2 text-emerald-500/10 w-24 h-24" />
-                  <div className="flex gap-4 items-start relative z-10">
-                    <Lightbulb className="text-emerald-500 shrink-0" size={24} />
-                    <p className="text-sm text-emerald-900/80 dark:text-emerald-100/80 italic font-medium leading-relaxed">
-                      "{plant.funFact}"
-                    </p>
-                  </div>
+                <div className="p-8 rounded-[2.5rem] bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-700 relative group overflow-hidden">
+                   <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform">
+                     <Sparkles size={48} className="text-emerald-500" />
+                   </div>
+                   <div className="flex gap-5 items-start">
+                     <div className="w-12 h-12 bg-white dark:bg-gray-700 rounded-2xl flex items-center justify-center shadow-sm shrink-0">
+                       <Lightbulb className="text-amber-500" size={24} />
+                     </div>
+                     <p className="text-sm text-gray-600 dark:text-gray-300 italic leading-relaxed font-medium">
+                       "{plant.funFact}"
+                     </p>
+                   </div>
                 </div>
               )}
             </div>
 
-            {/* Right Column: AI Stats & Metadata */}
-            <div className="lg:col-span-5 space-y-6">
+            {/* Confidence & Stats */}
+            <div className="lg:col-span-5 space-y-8">
               <ConfidenceBar score={confidenceScore} />
               
-              <div className="p-6 rounded-3xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800">
-                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Identification Matrix</h4>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500">Category</span>
-                    <span className="font-bold">{plant.isEdible ? 'Culinary/Medicinal' : 'Ornamental/Wild'}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500">Analysis Engine</span>
-                    <span className="font-bold flex items-center gap-1.5"><Sparkles size={12} className="text-emerald-500"/> Gemini 3.0</span>
-                  </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-5 rounded-3xl bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/50">
+                   <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest block mb-1">Engine</span>
+                   <span className="text-xs font-bold">Gemini 3.0-V</span>
+                </div>
+                <div className="p-5 rounded-3xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/50">
+                   <span className="text-[8px] font-black text-blue-600 uppercase tracking-widest block mb-1">Date</span>
+                   <span className="text-xs font-bold">{new Date().toLocaleDateString()}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Dynamic Sections */}
+        {/* Nutritional Profile */}
         {plant.isEdible && (
-          <div className="px-8 md:px-12 pb-12">
+          <div className="px-8 md:px-14 pb-14 border-t border-gray-50 dark:border-gray-800 pt-14">
             <HealthBenefits plant={plant} />
           </div>
         )}
 
-        {/* Intelligence Feed */}
-        <div className="bg-gray-50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800 px-8 md:px-12 py-12">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-3">
+        {/* intelligence Feed */}
+        <div className="bg-gray-900 dark:bg-black p-8 md:p-14">
+          <div className="flex items-center justify-between mb-10">
+            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-3">
               <Youtube size={18} className="text-red-500" /> 
-              Intelligence Feed: {plant.videoContext === 'recipes' ? 'Culinary Guides' : 'Cultivation & Safety'}
+              Botanical Media Feed
             </h3>
           </div>
 
           {loadingVideos ? (
             <div className="py-12 flex flex-col items-center justify-center">
               <Loader2 className="animate-spin text-emerald-500 mb-4" size={32} />
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Sourcing verified content...</p>
+              <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Scanning Global Archives...</p>
             </div>
           ) : videos.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -146,8 +158,8 @@ export const ResultCard = ({ plant, index }) => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 bg-white/50 dark:bg-gray-800/20 rounded-3xl border-2 border-dashed border-gray-200 dark:border-gray-800">
-              <p className="text-sm text-gray-500 italic">Exploring the global database for related media...</p>
+            <div className="text-center py-12 border-2 border-dashed border-gray-800 rounded-[2rem]">
+              <p className="text-xs text-gray-500 uppercase font-black tracking-widest">Sourcing context-specific media...</p>
             </div>
           )}
         </div>
