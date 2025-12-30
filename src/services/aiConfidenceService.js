@@ -12,13 +12,16 @@ export const aiConfidenceService = {
     return Math.min(Math.max(Math.round(score), 0), 100);
   },
 
+  /**
+   * Softened hallucination check (DW-U2 Preprocessing Concept)
+   * Ensures we don't reject valid edible plants that naturally contain vitamins.
+   */
   detectHallucination: (text) => {
     const suspiciousPatterns = [
-      /rich in vitamins/i,
-      /various minerals/i,
-      /contains nutrients/i,
-      /good for health/i,
-      /consult a doctor/i
+      /this plant is very healthy/i,
+      /contains many mysterious nutrients/i,
+      /cure all diseases/i,
+      /miracle plant/i
     ];
     
     let hitCount = 0;
@@ -26,6 +29,7 @@ export const aiConfidenceService = {
       if (p.test(text)) hitCount++;
     });
 
-    return hitCount >= 2; // Flag if multiple generic phrases found
+    // Only reject if it sounds like a "miracle cure" or uses non-scientific "mystery" language
+    return hitCount >= 1; 
   }
 };

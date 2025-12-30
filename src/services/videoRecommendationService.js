@@ -1,66 +1,65 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { youtubeCacheService } from "./youtubeCacheService";
+import { validateVideoRecommendations } from "../utils/validateVideoRecommendations";
 
 const API_KEY = process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 export const videoRecommendationService = {
   /**
-   * Finds recommended videos for a plant.
-   * Uses caching and AI-based search.
+   * Finds recommended videos for a plant using Google Search Grounding.
    */
   getRecommendedVideos: async (plantName, context = 'recipes') => {
     const cacheKey = youtubeCacheService.generateKey(plantName, context);
     
     // 1. Check Cache
     const cachedVideos = youtubeCacheService.get(cacheKey);
-    if (cachedVideos) return cachedVideos;
+    if (cachedVideos) {
+        const validCached = validateVideoRecommendations(cachedVideos);
+        if (validCached.length > 0) return validCached;
+    }
 
     if (!API_KEY) return [];
 
     try {
-      // 2. Construct Query based on context
-      // context is usually 'recipes' (edible) or 'care' (non-edible)
       let prompt = "";
       if (context === 'recipes') {
-        prompt = `Find 3 high-quality YouTube cooking videos or recipes specifically for "${plantName}". 
-        Prefer videos with high view counts or reputable chefs. 
-        Return JSON list: [{title, channel, link, duration}].`;
+        prompt = `Find 3 real YouTube videos for "${plantName}" recipes. 
+        Return ONLY a JSON array in this exact format: [{"title": "string", "channel": "string", "link": "https://youtube.com/watch?v=...", "reason": "string"}].`;
       } else {
-        prompt = `Find 3 high-quality YouTube videos about "${plantName}" care, propagation, or medicinal uses.
-        Return JSON list: [{title, channel, link, duration}].`;
+        prompt = `Find 3 real YouTube videos about "${plantName}" care and benefits. 
+        Return ONLY a JSON array in this exact format: [{"title": "string", "channel": "string", "link": "https://youtube.com/watch?v=...", "reason": "string"}].`;
       }
 
-      // 3. Call AI with Search Tool
+      // 2. Call Gemini 3 Pro (Required for Search Grounding + Complex Reasoning)
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-pro-preview',
         contents: prompt,
         config: {
           tools: [{ googleSearch: {} }],
-          responseMimeType: "application/json"
+          // Note: We avoid responseMimeType: "application/json" here because 
+          // Search Grounding often returns conversational text alongside the tool output.
         }
       });
 
-      const text = response.text || "[]";
+      const text = response.text || "";
       let videos = [];
       
       try {
-          // Parse potential array
+          // Robust JSON Extraction (WP-U3 AJAX Logic)
           const jsonMatch = text.match(/\[[\s\S]*\]/);
           if (jsonMatch) {
               videos = JSON.parse(jsonMatch[0]);
           }
       } catch (e) {
-          console.warn("Video JSON parse error", e);
+          console.warn("Manual JSON parse fallback triggered", e);
       }
 
-      // 4. Filter & Validate
-      const validVideos = videos
-        .filter(v => v.link && v.link.includes('youtube.com/watch'))
-        .slice(0, 3); // Max 3
+      // 3. Filter & Validate
+      const validVideos = validateVideoRecommendations(videos).slice(0, 3);
 
-      // 5. Cache Result (if we found videos)
+      // 4. Cache Result
       if (validVideos.length > 0) {
         youtubeCacheService.set(cacheKey, validVideos);
       }
@@ -68,7 +67,7 @@ export const videoRecommendationService = {
       return validVideos;
 
     } catch (error) {
-      console.error("Video Recommendation Failed:", error);
+      console.error("Video Search Failed:", error);
       return [];
     }
   }
