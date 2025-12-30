@@ -1,11 +1,11 @@
 
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/genai";
-import { healthProfileService } from "./healthProfileService";
-import { videoRecommendationService } from "./videoRecommendationService";
-import { aiConfidenceService } from "./aiConfidenceService";
-import { classificationEnsemble } from "./classificationEnsemble";
-import { dataWarehouseService } from "./dataWarehouseService";
-import { recommendationEngine } from "./recommendationEngine";
+import { healthProfileService } from "./healthProfileService.js";
+import { videoRecommendationService } from "./videoRecommendationService.js";
+import { aiConfidenceService } from "./aiConfidenceService.js";
+import { classificationEnsemble } from "./classificationEnsemble.js";
+import { dataWarehouseService } from "./dataWarehouseService.js";
+import { recommendationEngine } from "./recommendationEngine.js";
 
 const API_KEY = process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey: API_KEY });
@@ -97,9 +97,6 @@ export const plantDexService = {
     }
   },
 
-  /**
-   * Restoration of missing method to fix the PC.findSpecificRecipes TypeError
-   */
   findSpecificRecipes: async (plantName) => {
     try {
       return await videoRecommendationService.getRecommendedVideos(plantName, 'recipes');

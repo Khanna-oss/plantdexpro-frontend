@@ -6,7 +6,7 @@ import { aiConfidenceService } from "./aiConfidenceService.js";
 const API_KEY = process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
-const CACHE_KEY_PREFIX = 'plantdex_hp_v3_';
+const CACHE_KEY_PREFIX = 'plantdex_hp_v4_';
 
 export const healthProfileService = {
   getProfile: async (commonName, scientificName, isEdible) => {
@@ -53,22 +53,22 @@ export const healthProfileService = {
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
-        contents: `Provide a detailed nutritional and biochemical profile for ${scientificName} (${commonName}). 
-        Be extremely specific. Mention actual vitamins (e.g., Vitamin C, K) and minerals (e.g., Magnesium, Iron). 
-        Do not use vague marketing language like "very healthy" or "miracle plant". 
-        Focus on culinary and medicinal properties backed by botanical science.`,
+        contents: `Generate a nutritional profile for ${scientificName} (${commonName}). 
+        Mandatory: Include specific vitamins (like A, C, E) and minerals (like Iron, Zinc) found in this plant. 
+        Do not use placeholder text. Provide 3 specific health hints and a clear usage protocol.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: profileSchema,
-          temperature: 0.2
+          temperature: 0.1
         }
       });
 
-      const data = JSON.parse(response.text || "{}");
+      const text = response.text || "{}";
+      const data = JSON.parse(text);
       const validData = validateNutritionAI(data);
 
       if (validData) {
-        validData.confidence = aiConfidenceService.calculateScore(0.95, 1.0, 'llm');
+        validData.confidence = aiConfidenceService.calculateScore(0.98, 1.0, 'llm');
         localStorage.setItem(cacheKey, JSON.stringify(validData));
         return validData;
       }

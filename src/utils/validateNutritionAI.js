@@ -1,5 +1,5 @@
 
-import { aiConfidenceService } from "../services/aiConfidenceService";
+import { aiConfidenceService } from "../services/aiConfidenceService.js";
 
 export const validateNutritionAI = (data) => {
   if (!data || typeof data !== 'object') return null;
@@ -13,8 +13,8 @@ export const validateNutritionAI = (data) => {
     return null;
   }
 
-  // Ensure we have at least some basic data before showing to user
-  if (!nutrients.vitamins || !nutrients.minerals) return null;
+  // Ensure we have at least the primary nutrients to avoid empty UI states
+  if (!nutrients.vitamins && !nutrients.minerals) return null;
 
   return data;
 };
