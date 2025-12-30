@@ -1,12 +1,12 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { validateNutritionAI } from "../utils/validateNutritionAI";
-import { aiConfidenceService } from "./aiConfidenceService";
+import { validateNutritionAI } from "../utils/validateNutritionAI.js";
+import { aiConfidenceService } from "./aiConfidenceService.js";
 
 const API_KEY = process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
-const CACHE_KEY_PREFIX = 'plantdex_hp_v2_';
+const CACHE_KEY_PREFIX = 'plantdex_hp_v3_';
 
 export const healthProfileService = {
   getProfile: async (commonName, scientificName, isEdible) => {
@@ -53,11 +53,14 @@ export const healthProfileService = {
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
-        contents: `Provide an extremely specific nutritional profile for ${scientificName}. Focus on verified data. If unknown, say 'Data Unconfirmed'. Avoid generic phrases.`,
+        contents: `Provide a detailed nutritional and biochemical profile for ${scientificName} (${commonName}). 
+        Be extremely specific. Mention actual vitamins (e.g., Vitamin C, K) and minerals (e.g., Magnesium, Iron). 
+        Do not use vague marketing language like "very healthy" or "miracle plant". 
+        Focus on culinary and medicinal properties backed by botanical science.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: profileSchema,
-          temperature: 0.1
+          temperature: 0.2
         }
       });
 
@@ -65,12 +68,13 @@ export const healthProfileService = {
       const validData = validateNutritionAI(data);
 
       if (validData) {
-        validData.confidence = aiConfidenceService.calculateScore(0.9, 1.0, 'llm');
+        validData.confidence = aiConfidenceService.calculateScore(0.95, 1.0, 'llm');
         localStorage.setItem(cacheKey, JSON.stringify(validData));
         return validData;
       }
       return null;
     } catch (error) {
+      console.error("Health Profile Generation Failed:", error);
       return null;
     }
   }

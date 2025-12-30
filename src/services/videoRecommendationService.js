@@ -1,7 +1,7 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { youtubeCacheService } from "./youtubeCacheService";
-import { validateVideoRecommendations } from "../utils/validateVideoRecommendations";
+import { youtubeCacheService } from "./youtubeCacheService.js";
+import { validateVideoRecommendations } from "../utils/validateVideoRecommendations.js";
 
 const API_KEY = process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey: API_KEY });
@@ -38,8 +38,6 @@ export const videoRecommendationService = {
         contents: prompt,
         config: {
           tools: [{ googleSearch: {} }],
-          // Note: We avoid responseMimeType: "application/json" here because 
-          // Search Grounding often returns conversational text alongside the tool output.
         }
       });
 

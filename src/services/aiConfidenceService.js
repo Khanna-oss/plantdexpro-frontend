@@ -13,23 +13,18 @@ export const aiConfidenceService = {
   },
 
   /**
-   * Softened hallucination check (DW-U2 Preprocessing Concept)
-   * Ensures we don't reject valid edible plants that naturally contain vitamins.
+   * Refined hallucination check (DW-U2)
+   * Ensures we filter dangerous misinformation while allowing scientific descriptions.
    */
   detectHallucination: (text) => {
-    const suspiciousPatterns = [
-      /this plant is very healthy/i,
-      /contains many mysterious nutrients/i,
-      /cure all diseases/i,
-      /miracle plant/i
+    const dangerousPatterns = [
+      /mysterious nutrients that cure all/i,
+      /secret botanical miracle/i,
+      /magic properties/i,
+      /scientific data is intentionally hidden/i
     ];
     
-    let hitCount = 0;
-    suspiciousPatterns.forEach(p => {
-      if (p.test(text)) hitCount++;
-    });
-
-    // Only reject if it sounds like a "miracle cure" or uses non-scientific "mystery" language
-    return hitCount >= 1; 
+    // Only block if it hits truly suspicious, non-scientific "conspiracy" or "magic" language
+    return dangerousPatterns.some(p => p.test(text));
   }
 };
