@@ -40,7 +40,6 @@ export const plantDexService = {
     };
 
     try {
-      // WP-U3 AJAX pattern: Asynchronous content generation
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: [
@@ -64,7 +63,7 @@ export const plantDexService = {
       if (plants.length > 0) {
         const p = plants[0];
         
-        // DW-U4 ensemble check: Calibrate model confidence
+        // DW-U4 ensemble check: Calibrate model confidence (0-100)
         p.uiConfidence = aiConfidenceService.calculateScore(p.confidenceScore || 0.8, 1.0, 'vision');
 
         // DW-U1 Warehouse: Log the identification event as a 'Fact'
@@ -87,13 +86,26 @@ export const plantDexService = {
           name: p.commonName || p.scientificName,
           date: new Date().toLocaleDateString(),
           image: `data:image/jpeg;base64,${base64Image}`,
-          isEdible: p.isEdible
+          isEdible: p.isEdible,
+          uiConfidence: p.uiConfidence
         });
       }
 
       return { plants };
     } catch (error) {
       return { error: "AI Processing Error" };
+    }
+  },
+
+  /**
+   * Restoration of missing method to fix the PC.findSpecificRecipes TypeError
+   */
+  findSpecificRecipes: async (plantName) => {
+    try {
+      return await videoRecommendationService.getRecommendedVideos(plantName, 'recipes');
+    } catch (e) {
+      console.error("Video fetch failed:", e);
+      return [];
     }
   },
 

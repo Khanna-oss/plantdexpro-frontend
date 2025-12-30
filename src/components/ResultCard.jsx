@@ -12,7 +12,8 @@ export const ResultCard = ({ plant, index, originalImage }) => {
   const [loadingVideos, setLoadingVideos] = useState(false);
   const [activeVideoUrl, setActiveVideoUrl] = useState(null);
 
-  const confidenceScore = Math.round((plant.confidenceScore || 0) * 100);
+  // Use the calibrated uiConfidence (0-100) or fallback to raw score
+  const confidenceScore = plant.uiConfidence || Math.round((plant.confidenceScore || 0) * 100);
   const isLowConfidence = confidenceScore < 65;
 
   useEffect(() => {
