@@ -1,85 +1,77 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
+import { validateNutritionAI } from "../utils/validateNutritionAI";
+import { aiConfidenceService } from "./aiConfidenceService";
 
 const API_KEY = process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
-const CACHE_KEY_PREFIX = 'plantdex_health_profile_';
+const CACHE_KEY_PREFIX = 'plantdex_hp_v2_';
 
 export const healthProfileService = {
-  /**
-   * Generates a plant-specific health profile.
-   * Returns cached data if available for the scientific name.
-   */
   getProfile: async (commonName, scientificName, isEdible) => {
-    // 1. Validation & Cache Check
     if (!scientificName || !isEdible) return null;
     
     const cacheKey = `${CACHE_KEY_PREFIX}${scientificName.toLowerCase().replace(/\s/g, '_')}`;
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
       try {
-        return JSON.parse(cached);
+        const parsed = JSON.parse(cached);
+        if (validateNutritionAI(parsed)) return parsed;
       } catch (e) { localStorage.removeItem(cacheKey); }
     }
 
     if (!API_KEY) return null;
 
-    // 2. Define Schema for Strict JSON
     const profileSchema = {
       type: Type.OBJECT,
       properties: {
         nutrients: {
           type: Type.OBJECT,
           properties: {
-            vitamins: { type: Type.STRING, description: "Specific vitamins (e.g. 'A, C, K') or 'N/A'" },
-            minerals: { type: Type.STRING, description: "Specific minerals (e.g. 'Iron, Potassium') or 'N/A'" },
-            proteins: { type: Type.STRING, description: "Protein content description or 'N/A'" }
-          }
+            vitamins: { type: Type.STRING },
+            minerals: { type: Type.STRING },
+            proteins: { type: Type.STRING }
+          },
+          required: ["vitamins", "minerals"]
         },
         healthHints: {
           type: Type.ARRAY,
           items: {
             type: Type.OBJECT,
             properties: {
-              label: { type: Type.STRING, description: "Short benefit name (e.g. 'Anti-inflammatory')" },
-              desc: { type: Type.STRING, description: "1 precise sentence on why THIS plant helps." }
+              label: { type: Type.STRING },
+              desc: { type: Type.STRING }
             }
           }
         },
-        specificUsage: { 
-            type: Type.STRING, 
-            description: "Real, traditional, or culinary usage instruction. (e.g. 'Steep dried leaves for 5 mins')." 
-        }
+        specificUsage: { type: Type.STRING }
       },
       required: ["nutrients", "healthHints", "specificUsage"]
     };
 
     try {
-      // 3. Generate Content
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: `Analyze the plant "${scientificName}" (Common: ${commonName}). 
-        Provide REAL, SCIENTIFICALLY BACKED nutritional data and health benefits. 
-        Do not hallucinate. If data is unknown, return 'N/A'. 
-        Do not return generic text like "rich in vitamins". Be specific.`,
+        model: 'gemini-3-pro-preview',
+        contents: `Provide an extremely specific nutritional profile for ${scientificName}. Focus on verified data. If unknown, say 'Data Unconfirmed'. Avoid generic phrases.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: profileSchema,
-          temperature: 0.2 // Low temperature for factual accuracy
+          temperature: 0.1
         }
       });
 
-      const text = response.text || "{}";
-      const data = JSON.parse(text);
+      const data = JSON.parse(response.text || "{}");
+      const validData = validateNutritionAI(data);
 
-      // 4. Cache and Return
-      localStorage.setItem(cacheKey, JSON.stringify(data));
-      return data;
-
+      if (validData) {
+        validData.confidence = aiConfidenceService.calculateScore(0.9, 1.0, 'llm');
+        localStorage.setItem(cacheKey, JSON.stringify(validData));
+        return validData;
+      }
+      return null;
     } catch (error) {
-      console.error("Health Profile Generation Failed:", error);
-      return null; // Fail gracefully
+      return null;
     }
   }
 };
