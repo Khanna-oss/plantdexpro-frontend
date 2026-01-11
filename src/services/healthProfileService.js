@@ -3,18 +3,17 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { aiConfidenceService } from "./aiConfidenceService.js";
 
 const API_KEY = process.env.API_KEY || '';
-const CACHE_KEY_PREFIX = 'plantdex_hp_v6_';
+const CACHE_KEY_PREFIX = 'plantdex_hp_v8_';
 
 /**
- * Internal Validator (Inlined to fix Vercel Resolution Error)
+ * INTERNAL VALIDATOR (Inlined to fix Vercel Resolution Error)
  */
-const validateNutritionData = (data) => {
+const _validateNutrition = (data) => {
   if (!data || typeof data !== 'object') return null;
   const { nutrients } = data;
   if (!nutrients || (!nutrients.vitamins && !nutrients.minerals)) return null;
-  // Basic hallucination filter
-  const text = JSON.stringify(data);
-  if (/miracle cure|secret botanical|magic properties/i.test(text)) return null;
+  const text = JSON.stringify(data).toLowerCase();
+  if (text.includes("tracing") || text.includes("placeholder") || text.includes("unknown")) return null;
   return data;
 };
 
@@ -27,7 +26,7 @@ export const healthProfileService = {
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
-        if (validateNutritionData(parsed)) return parsed;
+        if (_validateNutrition(parsed)) return parsed;
       } catch (e) { localStorage.removeItem(cacheKey); }
     }
 
@@ -64,12 +63,12 @@ export const healthProfileService = {
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
-        contents: `Biochemical analysis task for ${scientificName} (${commonName}):
-        1. List actual vitamins (e.g., Vitamin C, Vitamin A, Folate).
-        2. List specific minerals (e.g., Calcium, Iron, Magnesium).
-        3. Provide 3 factual, science-backed health observations.
-        4. Detail safe preparation methods.
-        DO NOT use the word "Tracing" or other placeholders. Use specific nutritional names.`,
+        contents: `Strict botanical analysis for ${scientificName} (${commonName}).
+        1. List primary VITAMINS (e.g. A, B-Complex, C, E, K).
+        2. List specific MINERALS (e.g. Magnesium, Iron, Calcium, Zinc).
+        3. 3 therapeutic hints.
+        4. Detailed culinary or medicinal preparation.
+        MANDATORY: Provide scientific values. Do NOT use placeholder text like "Tracing". If data is rare, provide the nearest established biochemical constituents.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: profileSchema,
@@ -78,7 +77,7 @@ export const healthProfileService = {
       });
 
       const data = JSON.parse(response.text || "{}");
-      const validData = validateNutritionData(data);
+      const validData = _validateNutrition(data);
 
       if (validData) {
         validData.confidence = aiConfidenceService.calculateScore(0.98, 1.0, 'llm');
@@ -87,7 +86,7 @@ export const healthProfileService = {
       }
       return null;
     } catch (error) {
-      console.error("Health Profile Generation Failed:", error);
+      console.error("Health Profile Error:", error);
       return null;
     }
   }
