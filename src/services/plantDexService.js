@@ -62,7 +62,6 @@ export const plantDexService = {
         const p = plants[0];
         p.uiConfidence = aiConfidenceService.calculateScore(p.confidenceScore || 0.8, 1.0, 'vision');
         
-        // Fetch Nutrition / Health Profile if edible
         if (p.isEdible) {
           const hp = await healthProfileService.getProfile(p.commonName, p.scientificName, true);
           if (hp) {

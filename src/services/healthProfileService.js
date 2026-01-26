@@ -9,7 +9,6 @@ const _validateNutrition = (data) => {
   const { nutrients } = data;
   if (!nutrients || (!nutrients.vitamins && !nutrients.minerals)) return null;
   const text = JSON.stringify(data).toLowerCase();
-  // Strictly reject common AI placeholders
   if (text.includes("tracing") || text.includes("placeholder") || text.includes("unknown")) return null;
   return data;
 };
@@ -64,13 +63,13 @@ export const healthProfileService = {
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
-        contents: `Biochemical and Pharmacognosy analysis for ${scientificName} (${commonName}).
-        1. VITAMINS: List specific vitamins (e.g. A, B-Complex, C, E).
-        2. MINERALS: List specific minerals (e.g. Iron, Potassium, Magnesium).
-        3. HEALTH HINTS: 3 clinical/traditional therapeutic observations.
-        4. BENEFIT CHIPS: 4 short tags (e.g. "Antioxidant", "Iron Rich").
-        5. PREPARATION: Detailed culinary/medicinal steps.
-        MANDATORY: Provide scientific compounds. DO NOT use "Tracing" or placeholders.`,
+        contents: `Biochemical analysis for ${scientificName} (${commonName}).
+        1. VITAMINS: List specific real vitamins.
+        2. MINERALS: List specific real minerals.
+        3. HEALTH HINTS: 3 clinical/traditional observations.
+        4. BENEFIT CHIPS: 4 short tags.
+        5. PREPARATION: Detailed steps.
+        STRICT: No placeholders.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: profileSchema,
