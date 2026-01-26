@@ -8,7 +8,8 @@ import { useDarkMode } from './hooks/useDarkMode.js';
 import { plantDexService } from './services/plantDexService.js';
 import { compressImage } from './utils/imageHelper.js';
 import { motion } from 'framer-motion';
-import { XCircle, History } from 'lucide-react';
+import { XCircle, History, Leaf } from 'lucide-react';
+import { SoilBackground } from './components/SoilBackground.jsx';
 
 const App = () => {
   const [theme, toggleTheme] = useDarkMode();
@@ -31,10 +32,7 @@ const App = () => {
       const objectUrl = URL.createObjectURL(file);
       setImagePreview(objectUrl);
 
-      // Compress
       const base64Image = await compressImage(file);
-      
-      // Identify
       const data = await plantDexService.identifyPlant(base64Image);
       
       if (data.error) throw new Error(data.error);
@@ -61,19 +59,35 @@ const App = () => {
   }, []);
 
   return (
-    <div className={`min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300 ${theme}`}>
+    <div className={`min-h-screen flex flex-col relative transition-colors duration-300 ${theme}`}>
+      <SoilBackground />
       <Header theme={theme} toggleTheme={toggleTheme} />
-      <main className="flex-grow w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-        <div className="max-w-4xl mx-auto text-center mb-12">
-          <h1 className="text-5xl md:text-7xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight mb-6">
-            PlantDexPro
-          </h1>
-          <p className="text-lg md:text-2xl text-gray-600 dark:text-gray-300 font-medium max-w-2xl mx-auto">
-            Identify plants instantly. Unlock recipes, safety tips, and care guides with AI.
-          </p>
+      
+      <main className="flex-grow w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 relative z-10">
+        <div className="max-w-4xl mx-auto text-center mb-16">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-center gap-3 mb-6"
+          >
+            <div className="w-12 h-12 bg-[#4a3728] rounded-2xl flex items-center justify-center text-white shadow-xl">
+              <Leaf size={28} />
+            </div>
+            <h1 className="text-5xl md:text-7xl font-black text-[#4a3728] dark:text-[#f4f1ea] tracking-tighter">
+              PlantDexPro
+            </h1>
+          </motion.div>
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-lg md:text-2xl text-[#8b5a2b] dark:text-gray-400 font-medium max-w-2xl mx-auto italic"
+          >
+            Identify plants instantly. Unlock botanical insights, safety records, and habitat data with AI.
+          </motion.p>
         </div>
 
-        <div className="max-w-2xl mx-auto relative z-10 mb-16">
+        <div className="max-w-xl mx-auto relative z-10 mb-20">
           <ImageUploader 
             onIdentify={handleIdentify} 
             isLoading={isLoading} 
@@ -90,44 +104,49 @@ const App = () => {
 
         {error && !isLoading && (
           <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-2xl mx-auto text-center bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 px-6 py-4 rounded-xl shadow-sm flex items-center justify-center gap-3" 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-xl mx-auto text-center bg-rose-500/10 border border-rose-500/20 text-rose-600 px-6 py-4 rounded-2xl shadow-sm flex items-center justify-center gap-3" 
             role="alert"
           >
             <XCircle className="w-6 h-6 shrink-0" />
-            <span className="font-medium italic">{error}</span>
+            <span className="text-sm font-black uppercase tracking-widest">{error}</span>
           </motion.div>
         )}
 
         {!isLoading && results.length > 0 && (
-          <div className="w-full animate-fade-in-up">
+          <div className="w-full">
             <ResultsDisplay results={results} imagePreview={imagePreview} />
           </div>
         )}
 
         {!isLoading && results.length === 0 && history.length > 0 && (
-          <div className="max-w-5xl mx-auto mt-12 animate-fade-in">
-            <div className="flex items-center gap-2 mb-4 text-gray-400 uppercase text-xs font-bold tracking-widest">
-               <History size={14} /> Recent Discoveries
+          <div className="max-w-5xl mx-auto mt-24">
+            <div className="flex items-center gap-3 mb-8 text-[#8b5a2b] dark:text-gray-500 uppercase text-[10px] font-black tracking-[0.4em]">
+               <History size={16} /> Recent Discoveries
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
                {history.map((item, i) => (
-                  <div key={i} className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 opacity-80 hover:opacity-100 transition-opacity cursor-default">
-                      <div className="h-32 bg-gray-200 relative overflow-hidden">
+                  <motion.div 
+                    key={i}
+                    whileHover={{ y: -5 }}
+                    className="bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 group cursor-default"
+                  >
+                      <div className="h-40 bg-gray-200 relative overflow-hidden">
                          {item.image && (
                            <img 
                              src={item.image} 
-                             className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" 
+                             className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" 
                              alt={item.name} 
                            />
                          )}
+                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       </div>
-                      <div className="p-3">
-                         <p className="font-bold text-sm truncate text-gray-800 dark:text-gray-200">{item.name}</p>
-                         <p className="text-[10px] text-gray-500">{item.date}</p>
+                      <div className="p-4">
+                         <p className="font-black text-xs truncate text-gray-800 dark:text-gray-200 uppercase tracking-tight">{item.name}</p>
+                         <p className="text-[9px] text-gray-400 font-bold">{item.date}</p>
                       </div>
-                  </div>
+                  </motion.div>
                ))}
             </div>
           </div>

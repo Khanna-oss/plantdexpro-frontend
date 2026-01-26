@@ -2,6 +2,71 @@
 @tailwind components;
 @tailwind utilities;
 
-html,body,#root { height: 100%; }
-body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-:root { --primary: #10B981; }
+:root {
+  --soil-deep: #4a3728;
+  --clay: #8b5a2b;
+  --forest: #2d5a27;
+  --sand: #f4f1ea;
+  --sand-light: #fffcf7;
+  --accent-green: #10B981;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--sand);
+  color: var(--soil-deep);
+}
+
+.dark {
+  --soil-deep: #f4f1ea;
+  --clay: #d2a679;
+  --forest: #4ade80;
+  --sand: #1a140f;
+  --sand-light: #251e18;
+}
+
+.save-soil-watermark {
+  position: fixed;
+  font-size: 15vw;
+  font-weight: 900;
+  color: rgba(74, 55, 40, 0.03);
+  pointer-events: none;
+  z-index: 0;
+  white-space: nowrap;
+  user-select: none;
+  text-transform: uppercase;
+}
+
+.clay-shadow {
+  box-shadow: 0 20px 40px -15px rgba(139, 90, 43, 0.1);
+}
+
+.glass-soil {
+  background: rgba(255, 252, 247, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(139, 90, 43, 0.1);
+}
+
+.dark .glass-soil {
+  background: rgba(37, 30, 24, 0.7);
+  border: 1px solid rgba(210, 166, 121, 0.1);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--sand);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--clay);
+  border-radius: 10px;
+}
