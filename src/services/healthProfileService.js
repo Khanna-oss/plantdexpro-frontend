@@ -1,34 +1,13 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { aiConfidenceService } from "./aiConfidenceService.js";
 
 const API_KEY = process.env.API_KEY || '';
-const CACHE_KEY_PREFIX = 'plantdex_hp_v11_';
-
-const _validateNutrition = (data) => {
-  if (!data || typeof data !== 'object') return null;
-  const { nutrients } = data;
-  if (!nutrients || (!nutrients.vitamins && !nutrients.minerals)) return null;
-  const text = JSON.stringify(data).toLowerCase();
-  if (text.includes("tracing") || text.includes("placeholder") || text.includes("unknown")) return null;
-  return data;
-};
 
 export const healthProfileService = {
   getProfile: async (commonName, scientificName, isEdible) => {
-    if (!scientificName || !isEdible) return null;
+    if (!scientificName || !isEdible || !API_KEY) return null;
     
-    const cacheKey = `${CACHE_KEY_PREFIX}${scientificName.toLowerCase().replace(/\s/g, '_')}`;
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (_validateNutrition(parsed)) return parsed;
-      } catch (e) { localStorage.removeItem(cacheKey); }
-    }
-
-    if (!API_KEY) return null;
     const ai = new GoogleGenAI({ apiKey: API_KEY });
-
+    
     const profileSchema = {
       type: Type.OBJECT,
       properties: {
@@ -39,7 +18,7 @@ export const healthProfileService = {
             minerals: { type: Type.STRING },
             proteins: { type: Type.STRING }
           },
-          required: ["vitamins", "minerals"]
+          required: ["vitamins", "minerals", "proteins"]
         },
         healthHints: {
           type: Type.ARRAY,
@@ -50,44 +29,25 @@ export const healthProfileService = {
               desc: { type: Type.STRING }
             }
           }
-        },
-        benefitChips: {
-          type: Type.ARRAY,
-          items: { type: Type.STRING }
-        },
-        specificUsage: { type: Type.STRING }
+        }
       },
-      required: ["nutrients", "healthHints", "specificUsage", "benefitChips"]
+      required: ["nutrients", "healthHints"]
     };
 
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
-        contents: `Biochemical analysis for ${scientificName} (${commonName}).
-        1. VITAMINS: List specific real vitamins.
-        2. MINERALS: List specific real minerals.
-        3. HEALTH HINTS: 3 clinical/traditional observations.
-        4. BENEFIT CHIPS: 4 short tags.
-        5. PREPARATION: Detailed steps.
-        STRICT: No placeholders.`,
+        contents: `Biochemical data for ${scientificName}. 
+        Return VITAMINS (e.g. A, C, K), MINERALS (e.g. Iron, Calcium), and PROTEIN level.
+        Also provide 2 key health benefits.`,
         config: {
           responseMimeType: "application/json",
-          responseSchema: profileSchema,
-          temperature: 0.1
+          responseSchema: profileSchema
         }
       });
-
-      const data = JSON.parse(response.text || "{}");
-      const validData = _validateNutrition(data);
-
-      if (validData) {
-        validData.confidence = aiConfidenceService.calculateScore(0.98, 1.0, 'llm');
-        localStorage.setItem(cacheKey, JSON.stringify(validData));
-        return validData;
-      }
-      return null;
+      return JSON.parse(response.text || "{}");
     } catch (error) {
-      console.error("Health Profile Error:", error);
+      console.error("Nutrition Load Error:", error);
       return null;
     }
   }

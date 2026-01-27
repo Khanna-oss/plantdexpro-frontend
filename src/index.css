@@ -26,8 +26,8 @@ body {
   --soil-deep: #f4f1ea;
   --clay: #d2a679;
   --forest: #4ade80;
-  --sand: #1a140f;
-  --sand-light: #251e18;
+  --sand: #111827;
+  --sand-light: #1f2937;
 }
 
 .save-soil-watermark {
@@ -43,7 +43,7 @@ body {
 }
 
 .clay-shadow {
-  box-shadow: 0 20px 40px -15px rgba(139, 90, 43, 0.1);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.2);
 }
 
 .glass-soil {
@@ -54,8 +54,8 @@ body {
 }
 
 .dark .glass-soil {
-  background: rgba(37, 30, 24, 0.7);
-  border: 1px solid rgba(210, 166, 121, 0.1);
+  background: rgba(31, 41, 55, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 ::-webkit-scrollbar {
