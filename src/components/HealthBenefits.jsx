@@ -1,73 +1,69 @@
 import React from 'react';
 import { Heart, Check, ExternalLink } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 export const HealthBenefits = ({ plant }) => {
   if (!plant.isEdible) return null;
 
   const nutrients = plant.nutrients || {
-    vitamins: "A, C, K",
-    minerals: "Iron, Calcium, Potassium",
-    proteins: "Low to Moderate"
+    vitamins: "Analysis in progress...",
+    minerals: "Data fetching...",
+    proteins: "Contacting database..."
   };
   
   const healthHints = plant.healthHints || [
-    { label: "Digestive Health", desc: "Contains dietary fiber which may aid digestion." }
+    { label: "Botanical Research", desc: "Consulting scientific databases for specific species benefits." }
   ];
 
   return (
-    <div className="mt-8 space-y-6">
-      <div className="bg-[#1f2937]/50 dark:bg-[#111827]/50 rounded-2xl p-6 border border-emerald-500/10">
-        <div className="flex items-center gap-3 mb-6">
-          <Heart size={18} className="text-emerald-400" />
-          <h3 className="text-sm font-black text-emerald-400 uppercase tracking-widest">
-            Health & Nutrition Profile
-          </h3>
+    <div className="space-y-6">
+      <div className="flex items-center gap-3 mb-2">
+        <Heart size={18} className="text-emerald-900" />
+        <h3 className="text-[12px] font-black text-emerald-900 uppercase tracking-[0.3em]">
+          TRUTHFUL NUTRITION PROFILE
+        </h3>
+      </div>
+
+      <div className="space-y-3">
+        {/* Vitamins Card */}
+        <div className="bg-white/40 rounded-2xl p-4 border border-emerald-900/10 shadow-sm">
+          <span className="text-[9px] font-bold text-emerald-900/50 uppercase tracking-widest block mb-1">SPECIFIC VITAMINS</span>
+          <p className="text-md font-bold text-emerald-950">{nutrients.vitamins}</p>
         </div>
 
+        {/* Minerals Card */}
+        <div className="bg-white/40 rounded-2xl p-4 border border-emerald-900/10 shadow-sm">
+          <span className="text-[9px] font-bold text-emerald-900/50 uppercase tracking-widest block mb-1">KEY MINERALS</span>
+          <p className="text-md font-bold text-emerald-950">{nutrients.minerals}</p>
+        </div>
+
+        {/* Proteins Card */}
+        <div className="bg-white/40 rounded-2xl p-4 border border-emerald-900/10 shadow-sm">
+          <span className="text-[9px] font-bold text-emerald-900/50 uppercase tracking-widest block mb-1">PROTEIN & AMINO ACIDS</span>
+          <p className="text-md font-bold text-emerald-950">{nutrients.proteins}</p>
+        </div>
+      </div>
+
+      <div className="mt-8">
+        <h4 className="text-[10px] font-black text-emerald-900/50 uppercase tracking-widest mb-4">IDENTIFIED BENEFITS</h4>
         <div className="space-y-4">
-          {/* Vitamins Card */}
-          <div className="bg-[#1f2937] dark:bg-[#1f2937] rounded-xl p-5 border border-white/5">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Vitamins</span>
-            <p className="text-lg font-bold text-white">{nutrients.vitamins}</p>
-          </div>
-
-          {/* Minerals Card */}
-          <div className="bg-[#1f2937] dark:bg-[#1f2937] rounded-xl p-5 border border-white/5">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Minerals</span>
-            <p className="text-lg font-bold text-white">{nutrients.minerals}</p>
-          </div>
-
-          {/* Proteins Card */}
-          <div className="bg-[#1f2937] dark:bg-[#1f2937] rounded-xl p-5 border border-white/5">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Proteins</span>
-            <p className="text-lg font-bold text-white">{nutrients.proteins}</p>
-          </div>
-        </div>
-
-        {/* Potential Benefits */}
-        <div className="mt-8">
-          <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Potential Benefits</h4>
-          <div className="space-y-4">
-            {healthHints.map((hint, idx) => (
-              <div key={idx} className="flex gap-4 items-start group">
-                <div className="mt-1 w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
-                  <Check size={12} className="text-emerald-500" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h5 className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">
-                      {hint.label}
-                    </h5>
-                    <ExternalLink size={12} className="text-gray-500" />
-                  </div>
-                  <p className="text-xs text-gray-400 leading-relaxed mt-1">
-                    {hint.desc}
-                  </p>
-                </div>
+          {healthHints.map((hint, idx) => (
+            <div key={idx} className="flex gap-3 items-start group">
+              <div className="mt-1 w-4 h-4 rounded-full bg-emerald-950/10 flex items-center justify-center shrink-0">
+                <Check size={10} className="text-emerald-950" />
               </div>
-            ))}
-          </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h5 className="text-xs font-bold text-emerald-950 group-hover:underline cursor-default">
+                    {hint.label}
+                  </h5>
+                  <ExternalLink size={10} className="text-emerald-900/40" />
+                </div>
+                <p className="text-[10px] text-emerald-900/60 leading-relaxed mt-0.5 font-medium">
+                  {hint.desc}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

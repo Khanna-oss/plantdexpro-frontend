@@ -29,15 +29,10 @@ export const videoRecommendationService = {
     const ai = new GoogleGenAI({ apiKey: API_KEY });
 
     try {
-      const searchQuery = context === 'recipes' 
-        ? `Official culinary preparation and nutritional facts for ${plantName} plant`
-        : `Scientific botanical identification guide for ${plantName}`;
-
-      const prompt = `Find 3 high-quality YouTube videos for: "${searchQuery}". 
-      You MUST return a JSON array of objects. 
-      Each object MUST have: "title", "channel", "link" (a REAL YouTube URL), and "reason".
-      Search for real, existing videos. Verify the URLs correspond to the plant "${plantName}".
-      JSON format ONLY: [{"title": "...", "channel": "...", "link": "https://www.youtube.com/watch?v=...", "reason": "..."}]`;
+      const prompt = `Find 3 real YouTube videos about "${plantName}". 
+      Context: ${context === 'recipes' ? 'Culinary use and cooking' : 'Botanical identification and care'}.
+      Return a JSON array ONLY: [{"title": "...", "channel": "...", "link": "https://www.youtube.com/watch?v=...", "reason": "..."}].
+      Use Google Search to find ACTUAL existing video titles and links. Verify the URLs are valid.`;
 
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
@@ -48,14 +43,12 @@ export const videoRecommendationService = {
       });
 
       const text = response.text || "";
-      let videos = [];
       const jsonMatch = text.match(/\[[\s\S]*\]/);
+      let videos = [];
       if (jsonMatch) {
         try {
           videos = JSON.parse(jsonMatch[0]);
-        } catch (e) { 
-          console.error("YT Parse Error - Retrying with strict format", e);
-        }
+        } catch (e) { console.error("YT Parse Failure", e); }
       }
 
       const validVideos = _validateVideos(videos).slice(0, 3);

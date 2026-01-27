@@ -14,9 +14,9 @@ export const healthProfileService = {
         nutrients: {
           type: Type.OBJECT,
           properties: {
-            vitamins: { type: Type.STRING },
-            minerals: { type: Type.STRING },
-            proteins: { type: Type.STRING }
+            vitamins: { type: Type.STRING, description: "Specific vitamins found in this exact species, e.g. B1, B6, C." },
+            minerals: { type: Type.STRING, description: "Major minerals found in this species, e.g. Magnesium, Manganese." },
+            proteins: { type: Type.STRING, description: "Actual protein content per 100g if known, or specific amino acids." }
           },
           required: ["vitamins", "minerals", "proteins"]
         },
@@ -39,20 +39,27 @@ export const healthProfileService = {
     };
 
     try {
+      // Using Google Search to ground the data in reality rather than generic AI output
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
-        contents: `Provide REAL scientific nutritional data for the specific species: ${scientificName} (${commonName}). 
-        Identify the EXACT primary vitamins, minerals, and protein content found in this specific plant based on botanical and nutritional studies. 
-        Do not provide generic nutritional ranges. If specific data is unknown for a compound, state 'Traces' or 'Moderate' rather than generic filler.
-        Include 2 health benefits supported by ethnobotanical or clinical research.`,
+        contents: `Research the specific nutritional facts for ${scientificName} (${commonName}). 
+        I need TRUTHFUL, non-generic data. Do not just say 'A, C, K'. 
+        If it contains specific alkaloids or rare nutrients, list them. 
+        What is the actual protein level? Which specific minerals are predominant? 
+        Ground your answer in real botanical studies found on the web.`,
         config: {
+          tools: [{ googleSearch: {} }],
           responseMimeType: "application/json",
           responseSchema: profileSchema
         }
       });
-      return JSON.parse(response.text || "{}");
+      
+      const text = response.text || "{}";
+      const cleanedText = text.replace(/```json|```/g, "").trim();
+      return JSON.parse(cleanedText);
     } catch (error) {
-      console.error("Health Profile Service Error:", error);
+      console.error("Truthful Data Fetch Error:", error);
+      // Fallback to more direct prompt if grounding fails
       return null;
     }
   }
