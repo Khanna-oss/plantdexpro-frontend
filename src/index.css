@@ -6,9 +6,11 @@
   --soil-deep: #4a3728;
   --clay: #8b5a2b;
   --forest: #2d5a27;
-  --sand: #f4f1ea;
-  --sand-light: #fffcf7;
+  --sand: #F2E8D5; /* Light Biscuit / Soil Color */
+  --sand-light: #F9F5EB;
   --accent-green: #10B981;
+  --radium: #DFFF00; /* Radium Green */
+  --parrot-green: #98FB98; /* Parrot Green */
 }
 
 html, body, #root {
@@ -23,39 +25,40 @@ body {
 }
 
 .dark {
-  --soil-deep: #f4f1ea;
-  --clay: #d2a679;
-  --forest: #4ade80;
-  --sand: #111827;
-  --sand-light: #1f2937;
+  --soil-deep: #F2E8D5;
+  --clay: #D2A679;
+  --forest: #4ADE80;
+  --sand: #2C241D; /* Darker Soil */
+  --sand-light: #3D3228;
 }
 
 .save-soil-watermark {
   position: fixed;
   font-size: 15vw;
   font-weight: 900;
-  color: rgba(74, 55, 40, 0.03);
+  color: rgba(74, 55, 40, 0.05);
   pointer-events: none;
   z-index: 0;
   white-space: nowrap;
   user-select: none;
   text-transform: uppercase;
+  /* Radium border effect for text */
+  -webkit-text-stroke: 2px var(--radium);
+  filter: drop-shadow(0 0 10px rgba(223, 255, 0, 0.3));
+}
+
+.parrot-green-card {
+  background-color: var(--parrot-green) !important;
+  color: #1A3C1A !important;
+}
+
+.dark .parrot-green-card {
+  background-color: #2D5A27 !important;
+  color: #F9F5EB !important;
 }
 
 .clay-shadow {
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.2);
-}
-
-.glass-soil {
-  background: rgba(255, 252, 247, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(139, 90, 43, 0.1);
-}
-
-.dark .glass-soil {
-  background: rgba(31, 41, 55, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 20px 40px -15px rgba(74, 55, 40, 0.3);
 }
 
 ::-webkit-scrollbar {

@@ -29,17 +29,22 @@ export const healthProfileService = {
               desc: { type: Type.STRING }
             }
           }
+        },
+        edibleParts: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING }
         }
       },
-      required: ["nutrients", "healthHints"]
+      required: ["nutrients", "healthHints", "edibleParts"]
     };
 
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
-        contents: `Biochemical data for ${scientificName}. 
-        Return VITAMINS (e.g. A, C, K), MINERALS (e.g. Iron, Calcium), and PROTEIN level.
-        Also provide 2 key health benefits.`,
+        contents: `Provide REAL scientific nutritional data for the specific species: ${scientificName} (${commonName}). 
+        Identify the EXACT primary vitamins, minerals, and protein content found in this specific plant based on botanical and nutritional studies. 
+        Do not provide generic nutritional ranges. If specific data is unknown for a compound, state 'Traces' or 'Moderate' rather than generic filler.
+        Include 2 health benefits supported by ethnobotanical or clinical research.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: profileSchema
@@ -47,7 +52,7 @@ export const healthProfileService = {
       });
       return JSON.parse(response.text || "{}");
     } catch (error) {
-      console.error("Nutrition Load Error:", error);
+      console.error("Health Profile Service Error:", error);
       return null;
     }
   }

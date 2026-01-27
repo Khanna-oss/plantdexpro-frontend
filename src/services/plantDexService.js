@@ -32,7 +32,7 @@ export const plantDexService = {
                     reason: { type: Type.STRING }
                   }
                 },
-                description: "List the visual features used for identification (Explainable AI)."
+                description: "The specific visual traits that confirm this identity."
               }
             },
             required: ["scientificName", "commonName", "isEdible", "description", "visualFeatures"]
@@ -48,7 +48,7 @@ export const plantDexService = {
         contents: [{ 
           parts: [
             { inlineData: { mimeType: 'image/jpeg', data: base64Image } }, 
-            { text: "Identify this plant species. For Academic XAI purpose: specify exactly which morphological features (leaf, stem, flower) you used to make this decision." }
+            { text: "Identify this exact plant species from the photo. Provide a high-accuracy botanical description. For XAI verification, explain exactly which UNIQUE patterns, leaf shapes, or stem structures distinguish this specific plant from lookalikes. Do not provide generic information." }
           ] 
         }],
         config: { 
@@ -61,6 +61,8 @@ export const plantDexService = {
       const data = JSON.parse(response.text || "{}");
       if (data.plants && data.plants.length > 0) {
         const p = data.plants[0];
+        
+        // Ensure truthfulness by cross-referencing health profile specifically for this name
         if (p.isEdible) {
           const healthData = await healthProfileService.getProfile(p.commonName, p.scientificName, true);
           if (healthData) {
