@@ -29,10 +29,11 @@ export const videoRecommendationService = {
     const ai = new GoogleGenAI({ apiKey: API_KEY });
 
     try {
-      const prompt = `Find 3 real YouTube videos about "${plantName}". 
-      Context: ${context === 'recipes' ? 'Culinary use and cooking' : 'Botanical identification and care'}.
-      Return a JSON array ONLY: [{"title": "...", "channel": "...", "link": "https://www.youtube.com/watch?v=...", "reason": "..."}].
-      Use Google Search to find ACTUAL existing video titles and links. Verify the URLs are valid.`;
+      // Refined prompt for 'Useful and Meaningful' recipe videos
+      const prompt = `Perform a Google Search for real YouTube videos showing culinary recipes and cooking methods using "${plantName}". 
+      Focus on traditional or modern recipes that demonstrate preparation. 
+      Return a JSON array of 3 objects with "title", "channel", "link" (actual https://www.youtube.com/watch?v=... URL), and a specific "reason" why this video is helpful for someone who found this plant. 
+      JSON ONLY: [{"title": "...", "channel": "...", "link": "...", "reason": "..."}]`;
 
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
@@ -57,7 +58,7 @@ export const videoRecommendationService = {
       }
       return validVideos;
     } catch (error) {
-      console.error("YouTube Logic Error:", error);
+      console.error("YouTube Recipe Search Error:", error);
       return [];
     }
   }

@@ -6,7 +6,7 @@ const API_KEY = process.env.API_KEY || '';
 
 export const plantDexService = {
   identifyPlant: async (base64Image) => {
-    if (!API_KEY) return { error: "Missing API Key. Check environment variables." };
+    if (!API_KEY) return { error: "Missing API Key" };
     const ai = new GoogleGenAI({ apiKey: API_KEY });
 
     const schema = {
@@ -32,7 +32,7 @@ export const plantDexService = {
                     reason: { type: Type.STRING }
                   }
                 },
-                description: "The specific visual traits that confirm this identity."
+                description: "The specific unique visual features of this individual sample."
               }
             },
             required: ["scientificName", "commonName", "isEdible", "description", "visualFeatures"]
@@ -43,12 +43,13 @@ export const plantDexService = {
     };
 
     try {
+      // Use flash-preview for rapid identification, but strict instructions for non-generic data
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: [{ 
           parts: [
             { inlineData: { mimeType: 'image/jpeg', data: base64Image } }, 
-            { text: "Identify this exact plant species from the photo. Provide a high-accuracy botanical description. For XAI verification, explain exactly which UNIQUE patterns, leaf shapes, or stem structures distinguish this specific plant from lookalikes. Do not provide generic information." }
+            { text: "Identify this plant species. Return species-specific morphological characteristics. Be precise. Do not provide generic info." }
           ] 
         }],
         config: { 
@@ -59,10 +60,10 @@ export const plantDexService = {
       });
 
       const data = JSON.parse(response.text || "{}");
-      if (data.plants && data.plants.length > 0) {
+      if (data.plants?.[0]) {
         const p = data.plants[0];
         
-        // Ensure truthfulness by cross-referencing health profile specifically for this name
+        // Parallel fetch for grounded Truthful Nutrition data
         if (p.isEdible) {
           const healthData = await healthProfileService.getProfile(p.commonName, p.scientificName, true);
           if (healthData) {
@@ -81,8 +82,8 @@ export const plantDexService = {
       }
       return data;
     } catch (e) {
-      console.error("PlantDex Identification Error:", e);
-      return { error: "AI Engine error during botanical analysis." };
+      console.error("ID Engine Critical Error:", e);
+      return { error: "Botanical identification logic failed." };
     }
   },
 
@@ -90,17 +91,9 @@ export const plantDexService = {
     return await videoRecommendationService.getRecommendedVideos(query, 'recipes');
   },
 
-  getHistory: () => {
-    try {
-      return JSON.parse(localStorage.getItem('plant_hist_v1') || '[]');
-    } catch (e) { return []; }
-  },
-
+  getHistory: () => JSON.parse(localStorage.getItem('plant_hist_v1') || '[]'),
   saveToHistory: (item) => {
-    try {
-      const hist = plantDexService.getHistory();
-      const filtered = hist.filter(h => h.name !== item.name);
-      localStorage.setItem('plant_hist_v1', JSON.stringify([item, ...filtered].slice(0, 10)));
-    } catch (e) { console.error("History Save Error:", e); }
+    const hist = plantDexService.getHistory();
+    localStorage.setItem('plant_hist_v1', JSON.stringify([item, ...hist].slice(0, 10)));
   }
 };

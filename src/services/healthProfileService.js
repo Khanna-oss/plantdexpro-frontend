@@ -14,9 +14,9 @@ export const healthProfileService = {
         nutrients: {
           type: Type.OBJECT,
           properties: {
-            vitamins: { type: Type.STRING, description: "Specific vitamins found in this exact species, e.g. B1, B6, C." },
-            minerals: { type: Type.STRING, description: "Major minerals found in this species, e.g. Magnesium, Manganese." },
-            proteins: { type: Type.STRING, description: "Actual protein content per 100g if known, or specific amino acids." }
+            vitamins: { type: Type.STRING, description: "Detailed list of real vitamins found in this species." },
+            minerals: { type: Type.STRING, description: "Specific minerals predominant in this plant." },
+            proteins: { type: Type.STRING, description: "Detailed protein/amino acid profile." }
           },
           required: ["vitamins", "minerals", "proteins"]
         },
@@ -39,14 +39,14 @@ export const healthProfileService = {
     };
 
     try {
-      // Using Google Search to ground the data in reality rather than generic AI output
+      // MANDATORY: Use gemini-3-pro-preview with googleSearch for TRUTHFUL data
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
-        contents: `Research the specific nutritional facts for ${scientificName} (${commonName}). 
-        I need TRUTHFUL, non-generic data. Do not just say 'A, C, K'. 
-        If it contains specific alkaloids or rare nutrients, list them. 
-        What is the actual protein level? Which specific minerals are predominant? 
-        Ground your answer in real botanical studies found on the web.`,
+        contents: `Research the specific nutritional and biochemical profile of the plant ${scientificName} (${commonName}). 
+        You MUST use Google Search to find real, specific nutritional values. 
+        Avoid generic placeholders like "A, C, K" or "Rich in vitamins". 
+        I need to know the specific predominant vitamins (e.g., B6, B12, specific carotenoids), the exact minerals (e.g., high manganese or potassium levels), and a detailed protein/amino acid description. 
+        Identify safety-verified edible parts and exactly two therapeutic benefits supported by botanical science.`,
         config: {
           tools: [{ googleSearch: {} }],
           responseMimeType: "application/json",
@@ -55,11 +55,11 @@ export const healthProfileService = {
       });
       
       const text = response.text || "{}";
+      // Ensure the text is clean JSON
       const cleanedText = text.replace(/```json|```/g, "").trim();
       return JSON.parse(cleanedText);
     } catch (error) {
-      console.error("Truthful Data Fetch Error:", error);
-      // Fallback to more direct prompt if grounding fails
+      console.error("Critical: Truthful Data Retrieval Failed:", error);
       return null;
     }
   }
