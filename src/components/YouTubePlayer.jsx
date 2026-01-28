@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Loader2, Youtube, ExternalLink, ImageOff, Sparkles, Clock, Info, Search } from 'lucide-react';
+import { Play, Loader2, Youtube, ExternalLink, Sparkles, Clock, Info, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-// Removing .js extension to fix Vercel resolution issue
-import { youtubeThumbnailCache } from '../services/youtubeThumbnailCache';
+// Explicit extension and pathing for Vercel/Vite resolution
+import { youtubeThumbnailCache } from '../services/youtubeThumbnailCache.js';
 
 const getYoutubeId = (url) => {
   if (!url) return null;
@@ -27,10 +27,10 @@ export const YouTubePlayer = ({ video, isActive, onPlay }) => {
 
   if (!videoId) {
     return (
-      <div className="bg-white/20 rounded-[2rem] p-8 text-center border border-dashed border-[#D63434]/30">
+      <div className="bg-white/10 rounded-[2rem] p-8 text-center border border-dashed border-[#D63434]/30">
         <Youtube className="mx-auto mb-3 text-[#D63434] opacity-50" size={32} />
         <p className="text-[10px] font-black uppercase text-[#6B0000] mb-4">Recipe video link unavailable</p>
-        <button className="px-4 py-2 bg-[#D63434] text-white text-[10px] font-black uppercase rounded-full flex items-center gap-2 mx-auto">
+        <button className="px-5 py-2.5 bg-[#D63434] text-white text-[10px] font-black uppercase rounded-full flex items-center gap-2 mx-auto hover:bg-[#b02525] transition-colors shadow-lg">
           <Search size={12} /> Find Recipe Manually
         </button>
       </div>
@@ -42,13 +42,19 @@ export const YouTubePlayer = ({ video, isActive, onPlay }) => {
     ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
     : (cachedThumb || `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`);
 
+  const handleThumbLoad = () => {
+    if (!cachedThumb && !thumbError) {
+      youtubeThumbnailCache.set(videoId, thumbnailUrl);
+    }
+  };
+
   return (
     <div className="relative rounded-[2rem] overflow-hidden bg-white/40 border border-black/5 shadow-sm group/player transition-all duration-500 hover:shadow-xl">
       {isActive ? (
         <div className="relative aspect-video bg-black">
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/80">
-              <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+              <Loader2 className="w-8 h-8 text-[#CCFF00] animate-spin" />
             </div>
           )}
           <iframe
@@ -64,31 +70,34 @@ export const YouTubePlayer = ({ video, isActive, onPlay }) => {
         <div className="relative">
           <button 
             onClick={onPlay}
-            className="relative w-full aspect-video block overflow-hidden bg-gray-100"
+            className="relative w-full aspect-video block overflow-hidden bg-gray-200"
             aria-label={`Play recipe: ${video.title}`}
           >
             <img 
               src={thumbnailUrl} 
-              className="w-full h-full object-cover transition-transform duration-1000 group-hover/player:scale-105" 
+              className="w-full h-full object-cover transition-transform duration-1000 group-hover/player:scale-110" 
               alt={video.title}
+              onLoad={handleThumbLoad}
               onError={() => setThumbError(true)}
             />
             
-            <div className="absolute inset-0 bg-black/30 group-hover/player:bg-black/50 transition-colors flex flex-col items-center justify-center">
+            <div className="absolute inset-0 bg-black/40 group-hover/player:bg-black/60 transition-colors flex flex-col items-center justify-center">
               <motion.div 
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                className="w-16 h-16 rounded-full bg-[#D63434] border-4 border-white/50 flex items-center justify-center shadow-2xl"
+                className="w-20 h-20 rounded-full bg-[#D63434] border-4 border-white/40 flex items-center justify-center shadow-2xl"
               >
-                <Play fill="white" className="text-white ml-1" size={24} />
+                <Play fill="white" className="text-white ml-1" size={32} />
               </motion.div>
-              <span className="mt-4 text-[11px] font-black text-white uppercase tracking-widest bg-black/20 px-4 py-1 rounded-full backdrop-blur-md">Play Recipe</span>
+              <div className="mt-4 px-6 py-2 bg-[#CCFF00] text-[#1D3B23] text-[11px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg transform translate-y-2 opacity-0 group-hover/player:translate-y-0 group-hover/player:opacity-100 transition-all duration-500">
+                Play Recipe
+              </div>
             </div>
             
             <div className="absolute top-4 left-4">
-               <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
+               <div className="bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-2">
                   <Sparkles size={10} className="text-[#CCFF00]" />
-                  <span className="text-[8px] font-black text-white uppercase tracking-widest">Recommended Match</span>
+                  <span className="text-[9px] font-black text-white uppercase tracking-widest">Botany-Approved Recipe</span>
                </div>
             </div>
 
@@ -106,14 +115,14 @@ export const YouTubePlayer = ({ video, isActive, onPlay }) => {
 
       <div className="p-6">
         <div className="flex justify-between items-start gap-4 mb-3">
-          <h4 className="text-sm font-black text-[#6B0000] line-clamp-2 tracking-tight">
+          <h4 className="text-sm font-black text-[#6B0000] line-clamp-2 tracking-tight group-hover/player:text-[#D63434] transition-colors">
             {video.title}
           </h4>
           <div className="flex items-center gap-2 shrink-0">
             {video.reason && (
               <button 
-                onClick={() => setShowReason(!showReason)}
-                className={`p-2 rounded-full transition-colors ${showReason ? 'bg-[#D63434] text-white' : 'bg-black/5 text-[#D63434] hover:bg-black/10'}`}
+                onClick={(e) => { e.stopPropagation(); setShowReason(!showReason); }}
+                className={`p-2 rounded-full transition-all ${showReason ? 'bg-[#D63434] text-white shadow-inner' : 'bg-[#6B0000]/5 text-[#D63434] hover:bg-[#6B0000]/10'}`}
                 title="Why this video?"
               >
                 <Info size={14} />
@@ -123,15 +132,15 @@ export const YouTubePlayer = ({ video, isActive, onPlay }) => {
               href={video.link} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="p-2 rounded-full bg-[#D63434]/10 hover:bg-[#D63434]/20 transition-colors"
+              className="p-2 rounded-full bg-[#D63434]/10 hover:bg-[#D63434]/20 transition-colors text-[#D63434]"
             >
-              <ExternalLink size={14} className="text-[#D63434]" />
+              <ExternalLink size={14} />
             </a>
           </div>
         </div>
         
         <div className="flex items-center justify-between">
-          <span className="text-[9px] font-bold text-[#6B0000] opacity-60 uppercase tracking-widest">{video.channel}</span>
+          <span className="text-[9px] font-bold text-[#6B0000]/60 uppercase tracking-widest">{video.channel}</span>
         </div>
         
         <AnimatePresence>
@@ -142,10 +151,12 @@ export const YouTubePlayer = ({ video, isActive, onPlay }) => {
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <p className="text-[10px] text-[#6B0000] mt-3 italic bg-white/60 p-4 rounded-2xl border border-black/5 shadow-inner">
-                <span className="font-black uppercase text-[8px] block mb-1 text-[#D63434]">Expert Rationale:</span>
-                "{video.reason}"
-              </p>
+              <div className="mt-4 p-4 rounded-2xl bg-[#6B0000]/5 border border-[#6B0000]/10">
+                <p className="text-[10px] text-[#6B0000] italic leading-relaxed">
+                  <span className="font-black uppercase text-[8px] block mb-1 text-[#D63434] tracking-wider">AI Rationale:</span>
+                  "{video.reason}"
+                </p>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

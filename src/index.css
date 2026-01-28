@@ -3,16 +3,17 @@
 @tailwind utilities;
 
 :root {
-  --soil-deep: #4a3728;
+  --soil-deep: #4B3621;
   --clay: #8b5a2b;
-  --forest: #2d5a27;
-  --sand: #E3D5B8; /* Warm Biscuit Soil Color */
+  --forest: #1D3B23;
+  --sand: #E3D5B8;
   --sand-light: #F2E9D8;
   --accent-green: #10B981;
-  --radium: #CCFF00; /* Sharp Radium Green */
-  --parrot-green: #98FB98; /* Parrot Green */
+  --radium: #CCFF00;
+  --parrot-green: #98FB98;
   --status-red: #D63434;
   --content-red: #6B0000;
+  --off-white: #F6F4E6;
 }
 
 html, body, #root {
@@ -25,10 +26,11 @@ body {
   background-color: var(--sand);
   color: var(--soil-deep);
   overflow-x: hidden;
+  font-family: 'Inter', sans-serif;
 }
 
 .dark {
-  --soil-deep: #F2E9D8;
+  --soil-deep: #F6F4E6;
   --clay: #D2A679;
   --forest: #4ADE80;
   --sand: #3D2B1F;
@@ -37,7 +39,7 @@ body {
 
 .save-soil-watermark {
   position: fixed;
-  font-size: 10vw;
+  font-size: 15vw;
   font-weight: 900;
   color: transparent;
   pointer-events: none;
@@ -45,16 +47,19 @@ body {
   white-space: nowrap;
   user-select: none;
   text-transform: uppercase;
-  /* Radium border effect - high visibility */
-  -webkit-text-stroke: 1.5px var(--radium);
-  opacity: 0.2;
-  filter: drop-shadow(0 0 12px rgba(204, 255, 0, 0.4));
+  -webkit-text-stroke: 2px rgba(75, 54, 33, 0.15);
+  opacity: 0.1;
+  filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.1));
+}
+
+.dark .save-soil-watermark {
+  -webkit-text-stroke: 1px rgba(246, 244, 230, 0.1);
 }
 
 .parrot-green-card {
   background-color: var(--parrot-green) !important;
   color: var(--content-red) !important; 
-  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 40px 80px -12px rgba(0, 0, 0, 0.4);
 }
 
 .parrot-green-card h2, 
@@ -65,12 +70,18 @@ body {
 }
 
 .dark .parrot-green-card {
-  background-color: #2D5A27 !important;
-  color: #F0FDF4 !important;
+  background-color: #1D3B23 !important;
+  color: var(--off-white) !important;
 }
 
 .clay-shadow {
-  box-shadow: 0 20px 40px -15px rgba(74, 55, 40, 0.3);
+  box-shadow: 0 20px 40px -15px rgba(74, 55, 40, 0.4);
+}
+
+/* Custom Carved Text Effect */
+.carved-text {
+  color: var(--soil-deep);
+  text-shadow: 1px 1px 0px rgba(255,255,255,0.1), -1px -1px 0px rgba(0,0,0,0.2);
 }
 
 ::-webkit-scrollbar {
@@ -84,4 +95,13 @@ body {
 ::-webkit-scrollbar-thumb {
   background: var(--clay);
   border-radius: 10px;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.02); }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s infinite ease-in-out;
 }
