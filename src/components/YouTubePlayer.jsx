@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Loader2, Youtube, ExternalLink, ImageOff, Sparkles, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { youtubeThumbnailCache } from '../services/youtubeThumbnailCache';
+import { youtubeThumbnailCache } from '../services/youtubeThumbnailCache.js';
 
 const getYoutubeId = (url) => {
   if (!url) return null;

@@ -4,8 +4,8 @@ const CACHE_PREFIX = 'plantdex_nutrition_';
 const TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 /**
- * Service to fetch grounded nutrition data using Gemini 3.
- * Implements caching, structural validation, and confidence thresholding.
+ * Service to fetch grounded nutrition data using Gemini.
+ * Implements 24h caching, structural validation, and confidence thresholding.
  */
 export const aiNutritionLookup = {
   fetchNutrition: async (plantName, scientificName, tags = []) => {
@@ -15,7 +15,7 @@ export const aiNutritionLookup = {
     const lookupKey = scientificName || plantName;
     const cacheKey = `${CACHE_PREFIX}${lookupKey.toLowerCase().replace(/\W/g, '_')}`;
 
-    // 1. Caching Layer
+    // 1. Caching Layer (localStorage)
     try {
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
@@ -26,10 +26,11 @@ export const aiNutritionLookup = {
         }
       }
     } catch (e) {
-      console.warn("Cache read error", e);
+      console.warn("Cache read error:", e);
     }
 
-    // 2. ML/LLM Pipeline Initialization
+    // 2. ML/LLM Pipeline
+    // Initialize right before call to ensure fresh API key
     const ai = new GoogleGenAI({ apiKey: API_KEY });
 
     const schema = {
@@ -38,76 +39,71 @@ export const aiNutritionLookup = {
         nutrients: {
           type: Type.OBJECT,
           properties: {
-            vitamins: { type: Type.STRING, description: "Comma separated list of specific vitamins." },
-            minerals: { type: Type.STRING, description: "Specific minerals present in high concentrations." },
-            proteins: { type: Type.STRING, description: "Protein content or amino acid profile details." },
+            vitamins: { type: Type.STRING, description: "Specific vitamins found (e.g., A, C, K)." },
+            minerals: { type: Type.STRING, description: "Predominant minerals." },
+            proteins: { type: Type.STRING, description: "Protein density or amino acid profile." },
             calories: { type: Type.STRING, description: "Estimated caloric density per 100g." }
           },
-          required: ["vitamins", "minerals", "proteins"]
+          required: ["vitamins", "minerals", "proteins", "calories"]
         },
         healthHints: {
           type: Type.ARRAY,
           items: {
             type: Type.OBJECT,
             properties: {
-              label: { type: Type.STRING },
-              desc: { type: Type.STRING }
-            }
+              label: { type: Type.STRING, description: "Short benefit name." },
+              desc: { type: Type.STRING, description: "Brief scientific explanation." }
+            },
+            required: ["label", "desc"]
           }
         },
         confidence: { 
           type: Type.NUMBER, 
-          description: "Numerical confidence score (0-100) based on source reliability." 
+          description: "Numerical confidence score (0-100) based on data availability." 
         }
       },
       required: ["nutrients", "healthHints", "confidence"]
     };
 
     try {
-      // 3. Grounded Generation Call
+      // Use gemini-3-flash-preview for fast but accurate lookup
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Provide verified nutrition data for the plant: ${scientificName} (Commonly: ${plantName}). 
-        Context Tags: ${tags.join(', ')}. 
-        Focus on safety-first data. Use grounded botanical databases.`,
+        contents: `Provide safety-verified botanical nutrition data for: ${scientificName} (${plantName}). 
+        Visual Context: ${tags.join(', ')}. 
+        You must return accurate, grounded data. If data is unknown, set confidence low.`,
         config: {
           responseMimeType: "application/json",
-          responseSchema: schema,
-          thinkingConfig: { thinkingBudget: 0 } // Flash response for rapid lookup
+          responseSchema: schema
         }
       });
 
       const result = JSON.parse(response.text);
 
-      // 4. Validation & Confidence Threshold (>= 60%)
+      // 3. Validation & Confidence Check (>= 60%)
       if (result && result.confidence >= 60 && result.nutrients) {
         const dataToCache = {
           nutrients: result.nutrients,
           healthHints: result.healthHints || []
         };
 
-        // 5. Success - Update Cache
+        // 4. Update Cache
         try {
           localStorage.setItem(cacheKey, JSON.stringify({
             data: dataToCache,
             timestamp: Date.now()
           }));
         } catch (e) {
-          console.warn("Local storage quota exceeded, skipping cache write.");
+          console.warn("Cache write failed:", e);
         }
 
         return dataToCache;
       }
 
-      console.warn(`[NutritionLookup] Confidence too low (${result?.confidence}%) for ${lookupKey}`);
+      console.warn(`[NutritionLookup] Confidence ${result?.confidence}% below threshold for ${lookupKey}`);
       return null;
     } catch (error) {
-      // 6. Graceful Failure Handling
-      if (error.message?.includes('429')) {
-        console.error("Rate limit reached for nutrition lookup. Failing silently.");
-      } else {
-        console.error("Critical error in Nutrition AI Pipeline:", error);
-      }
+      console.error("Nutrition Lookup Pipeline Failed:", error);
       return null;
     }
   }

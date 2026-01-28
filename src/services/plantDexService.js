@@ -2,11 +2,11 @@ import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/gen
 import { aiNutritionLookup } from "./aiNutritionLookup.js";
 import { videoRecommendationService } from "./videoRecommendationService.js";
 
-const API_KEY = process.env.API_KEY || '';
-
 export const plantDexService = {
   identifyPlant: async (base64Image) => {
+    const API_KEY = process.env.API_KEY;
     if (!API_KEY) return { error: "Missing API Key" };
+    
     const ai = new GoogleGenAI({ apiKey: API_KEY });
 
     const schema = {
@@ -31,8 +31,7 @@ export const plantDexService = {
                     part: { type: Type.STRING },
                     reason: { type: Type.STRING }
                   }
-                },
-                description: "The specific unique visual features of this individual sample."
+                }
               }
             },
             required: ["scientificName", "commonName", "isEdible", "description", "visualFeatures"]
@@ -48,7 +47,7 @@ export const plantDexService = {
         contents: [{ 
           parts: [
             { inlineData: { mimeType: 'image/jpeg', data: base64Image } }, 
-            { text: "Identify this plant species. Return species-specific morphological characteristics. Be precise. Do not provide generic info." }
+            { text: "Identify this plant species from the image. Provide botanical details and morphological features." }
           ] 
         }],
         config: { 
@@ -62,13 +61,13 @@ export const plantDexService = {
       if (data.plants?.[0]) {
         const p = data.plants[0];
         
-        // Use the new AI Nutrition Pipeline for edible species
+        // Trigger enriched nutrition data for edible species
         if (p.isEdible) {
           const tags = p.visualFeatures?.map(f => f.reason) || [];
-          const nutritionData = await aiNutritionLookup.fetchNutrition(p.commonName, p.scientificName, tags);
-          if (nutritionData) {
-            p.nutrients = nutritionData.nutrients;
-            p.healthHints = nutritionData.healthHints;
+          const nutrition = await aiNutritionLookup.fetchNutrition(p.commonName, p.scientificName, tags);
+          if (nutrition) {
+            p.nutrients = nutrition.nutrients;
+            p.healthHints = nutrition.healthHints;
           }
         }
         
@@ -81,8 +80,8 @@ export const plantDexService = {
       }
       return data;
     } catch (e) {
-      console.error("ID Engine Critical Error:", e);
-      return { error: "Botanical identification logic failed." };
+      console.error("Identification logic failed:", e);
+      return { error: "Botanical identification failed. Please check your image clarity." };
     }
   },
 
@@ -93,6 +92,7 @@ export const plantDexService = {
   getHistory: () => JSON.parse(localStorage.getItem('plant_hist_v1') || '[]'),
   saveToHistory: (item) => {
     const hist = plantDexService.getHistory();
-    localStorage.setItem('plant_hist_v1', JSON.stringify([item, ...hist].slice(0, 10)));
+    const updated = [item, ...hist].filter((v, i, a) => a.findIndex(t => t.name === v.name) === i);
+    localStorage.setItem('plant_hist_v1', JSON.stringify(updated.slice(0, 10)));
   }
 };

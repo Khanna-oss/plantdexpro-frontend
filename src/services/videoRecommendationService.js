@@ -1,8 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 import { youtubeCacheService } from "./youtubeCacheService.js";
 
-const API_KEY = process.env.API_KEY || '';
-
+/**
+ * Validates and cleans video objects found by the AI.
+ */
 const _validateVideos = (videos) => {
   if (!Array.isArray(videos)) return [];
   return videos.filter(video => {
@@ -17,6 +18,7 @@ const _validateVideos = (videos) => {
 
 export const videoRecommendationService = {
   getRecommendedVideos: async (plantName, context = 'recipes') => {
+    const API_KEY = process.env.API_KEY;
     if (!API_KEY) return [];
     
     const cacheKey = youtubeCacheService.generateKey(plantName, context);
@@ -29,26 +31,30 @@ export const videoRecommendationService = {
     const ai = new GoogleGenAI({ apiKey: API_KEY });
 
     try {
-      const prompt = `Perform a Google Search for real YouTube videos showing culinary recipes and cooking methods using "${plantName}". 
-      Focus on traditional or modern recipes. Find real videos.
-      Return a JSON array of up to 3 objects with "title", "channel", "link" (actual https://www.youtube.com/watch?v=... URL), "duration" (e.g. "5:30"), and a specific "reason" why this video is helpful. 
-      JSON ONLY: [{"title": "...", "channel": "...", "link": "...", "duration": "...", "reason": "..."}]`;
+      const prompt = `Find real YouTube videos (title, channel, link) showing ${context} for "${plantName}". 
+      You MUST use Google Search to find actual existing videos.
+      Return a JSON array of up to 3 objects. 
+      JSON format ONLY: [{"title": "Video Name", "channel": "Channel Name", "link": "https://www.youtube.com/watch?v=...", "duration": "M:SS", "reason": "why useful"}]`;
 
+      // Use gemini-3-pro-preview for high-quality web search integration
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
         contents: prompt,
         config: {
-          tools: [{ googleSearch: {} }],
+          tools: [{ googleSearch: {} }]
         }
       });
 
       const text = response.text || "";
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      // Extract JSON array robustly even if conversational text is present
+      const jsonMatch = text.match(/\[\s*\{[\s\S]*\}\s*\]/);
       let videos = [];
       if (jsonMatch) {
         try {
           videos = JSON.parse(jsonMatch[0]);
-        } catch (e) { console.error("YT Parse Failure", e); }
+        } catch (e) { 
+          console.warn("YouTube JSON Parse Error", e); 
+        }
       }
 
       const validVideos = _validateVideos(videos).slice(0, 3);
@@ -57,7 +63,7 @@ export const videoRecommendationService = {
       }
       return validVideos;
     } catch (error) {
-      console.error("YouTube Recipe Search Error:", error);
+      console.error("YouTube Search Failed:", error);
       return [];
     }
   }

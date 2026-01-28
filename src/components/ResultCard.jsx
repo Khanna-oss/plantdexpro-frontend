@@ -30,36 +30,40 @@ export const ResultCard = ({ plant: initialPlant }) => {
   };
 
   const fetchEnrichment = async () => {
-    if (plant.commonName) {
-      // Fetch Nutrition if Edible
-      if (plant.isEdible && !plant.nutrients) {
-        setLoadingNutrition(true);
-        setNutritionError(null);
-        try {
-          const healthData = await healthProfileService.getProfile(plant.commonName, plant.scientificName, true);
-          if (healthData) {
-            setPlant(prev => ({
-              ...prev,
-              nutrients: healthData.nutrients,
-              healthHints: healthData.healthHints,
-              edibleParts: healthData.edibleParts
-            }));
-          } else {
-            setNutritionError("unavailable");
-          }
-        } catch (err) {
-          setNutritionError("timeout");
-        } finally {
-          setLoadingNutrition(false);
-        }
-      }
+    if (!plant.commonName) return;
 
-      // Fetch Videos
-      setLoadingVideos(true);
-      plantDexService.findSpecificRecipes(plant.commonName)
-        .then(res => setVideos(res || []))
-        .catch(err => console.error(err))
-        .finally(() => setLoadingVideos(false));
+    // Fetch Recipes
+    setLoadingVideos(true);
+    try {
+      const res = await plantDexService.findSpecificRecipes(plant.commonName);
+      setVideos(res || []);
+    } catch (err) {
+      console.error("Video fetch error:", err);
+    } finally {
+      setLoadingVideos(false);
+    }
+
+    // Nutrition fallback if not already provided during identification
+    if (plant.isEdible && !plant.nutrients) {
+      setLoadingNutrition(true);
+      setNutritionError(null);
+      try {
+        const healthData = await healthProfileService.getProfile(plant.commonName, plant.scientificName, true);
+        if (healthData) {
+          setPlant(prev => ({
+            ...prev,
+            nutrients: healthData.nutrients,
+            healthHints: healthData.healthHints,
+            edibleParts: healthData.edibleParts
+          }));
+        } else {
+          setNutritionError("unavailable");
+        }
+      } catch (err) {
+        setNutritionError("timeout");
+      } finally {
+        setLoadingNutrition(false);
+      }
     }
   };
 
@@ -109,7 +113,7 @@ export const ResultCard = ({ plant: initialPlant }) => {
             </p>
           </SectionCard>
 
-          {/* Nutrition Profile - Real Grounded Data */}
+          {/* Nutrition Profile */}
           {(plant.isEdible || loadingNutrition) && (
             <div className="bg-white/20 backdrop-blur-md rounded-3xl p-6 border border-white/30 shadow-inner">
                <HealthBenefits plant={plant} isLoading={loadingNutrition} />
@@ -125,7 +129,6 @@ export const ResultCard = ({ plant: initialPlant }) => {
             </div>
           )}
 
-          {/* Explainability (XAI) */}
           <div className="bg-black/5 p-6 rounded-3xl border border-black/5">
             <GradCamView features={plant.visualFeatures} />
           </div>
@@ -143,7 +146,7 @@ export const ResultCard = ({ plant: initialPlant }) => {
           </div>
         </div>
 
-        {/* Video Feed - Grounded Results */}
+        {/* Video Feed */}
         <div className="bg-black/10 p-8 border-t border-black/5">
            <h3 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mb-6" style={{ color: '#D63434' }}>
              <Youtube size={16} className="text-red-700" /> CULINARY PREPARATION & RECIPES
