@@ -11,6 +11,8 @@
   --accent-green: #10B981;
   --radium: #CCFF00; /* Sharp Radium Green */
   --parrot-green: #98FB98; /* Parrot Green */
+  --status-red: #D63434;
+  --content-red: #6B0000;
 }
 
 html, body, #root {
@@ -51,9 +53,15 @@ body {
 
 .parrot-green-card {
   background-color: var(--parrot-green) !important;
-  /* Dark text for maximum readability on parrot green */
-  color: #062006 !important; 
+  color: var(--content-red) !important; 
   box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.3);
+}
+
+.parrot-green-card h2, 
+.parrot-green-card h3, 
+.parrot-green-card h4, 
+.parrot-green-card h5 {
+  color: var(--status-red) !important;
 }
 
 .dark .parrot-green-card {

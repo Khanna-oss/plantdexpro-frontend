@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  ShieldAlert, Info, MapPin, History, Youtube, Loader2, Leaf, ShieldCheck, Microscope
+  ShieldAlert, Info, MapPin, History, Youtube, Loader2, Leaf, ShieldCheck, Microscope, RefreshCcw
 } from 'lucide-react';
 import { plantDexService } from '../services/plantDexService.js';
+import { healthProfileService } from '../services/healthProfileService.js';
 import { YouTubePlayer } from './YouTubePlayer.jsx';
 import { AICondensedSummary } from './AICondensedSummary.jsx';
 import { SectionCard } from './SectionCard.jsx';
@@ -11,9 +12,12 @@ import { HealthBenefits } from './HealthBenefits.jsx';
 import { GradCamView } from './GradCamView.jsx';
 import { AcademicMetrics } from './AcademicMetrics.jsx';
 
-export const ResultCard = ({ plant }) => {
+export const ResultCard = ({ plant: initialPlant }) => {
+  const [plant, setPlant] = useState(initialPlant);
   const [videos, setVideos] = useState([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
+  const [loadingNutrition, setLoadingNutrition] = useState(false);
+  const [nutritionError, setNutritionError] = useState(null);
   const [activeVideoUrl, setActiveVideoUrl] = useState(null);
 
   const confidenceScore = plant.uiConfidence || Math.round((plant.confidenceScore || 0) * 100) || 94;
@@ -25,14 +29,42 @@ export const ResultCard = ({ plant }) => {
     dataset: "PlantVillage + Grounded Search"
   };
 
-  useEffect(() => {
+  const fetchEnrichment = async () => {
     if (plant.commonName) {
+      // Fetch Nutrition if Edible
+      if (plant.isEdible && !plant.nutrients) {
+        setLoadingNutrition(true);
+        setNutritionError(null);
+        try {
+          const healthData = await healthProfileService.getProfile(plant.commonName, plant.scientificName, true);
+          if (healthData) {
+            setPlant(prev => ({
+              ...prev,
+              nutrients: healthData.nutrients,
+              healthHints: healthData.healthHints,
+              edibleParts: healthData.edibleParts
+            }));
+          } else {
+            setNutritionError("unavailable");
+          }
+        } catch (err) {
+          setNutritionError("timeout");
+        } finally {
+          setLoadingNutrition(false);
+        }
+      }
+
+      // Fetch Videos
       setLoadingVideos(true);
       plantDexService.findSpecificRecipes(plant.commonName)
         .then(res => setVideos(res || []))
         .catch(err => console.error(err))
         .finally(() => setLoadingVideos(false));
     }
+  };
+
+  useEffect(() => {
+    fetchEnrichment();
   }, [plant.commonName]);
 
   return (
@@ -57,8 +89,8 @@ export const ResultCard = ({ plant }) => {
             </div>
           </div>
           
-          <h2 className="text-4xl font-black text-emerald-950 mb-1 tracking-tight leading-none">{plant.commonName}</h2>
-          <p className="text-base font-serif italic text-emerald-900/70 mb-8">{plant.scientificName}</p>
+          <h2 className="text-4xl font-black mb-1 tracking-tight leading-none" style={{ color: '#D63434' }}>{plant.commonName}</h2>
+          <p className="text-base font-serif italic mb-8" style={{ color: '#6B0000', opacity: 0.7 }}>{plant.scientificName}</p>
           
           <div className="bg-white/30 backdrop-blur-sm p-4 rounded-2xl mb-6 border border-white/20">
             <AICondensedSummary description={plant.description} />
@@ -70,17 +102,26 @@ export const ResultCard = ({ plant }) => {
             title="EDIBLE PARTS" 
             icon={Leaf} 
             preview={plant.isEdible ? "Safety-verified consumption guide..." : "Caution required"}
-            defaultOpen={true}
+            defaultOpen={false}
           >
-            <p className="text-emerald-950 font-black text-lg capitalize">
+            <p className="font-black text-lg capitalize" style={{ color: '#6B0000' }}>
               {plant.isEdible ? (plant.edibleParts?.join(', ') || 'Various validated parts') : 'Consumption is strictly not advised'}
             </p>
           </SectionCard>
 
           {/* Nutrition Profile - Real Grounded Data */}
-          {plant.isEdible && (
-            <div className="bg-white/40 backdrop-blur-md rounded-3xl p-6 border border-white/50 shadow-inner">
-               <HealthBenefits plant={plant} />
+          {(plant.isEdible || loadingNutrition) && (
+            <div className="bg-white/20 backdrop-blur-md rounded-3xl p-6 border border-white/30 shadow-inner">
+               <HealthBenefits plant={plant} isLoading={loadingNutrition} />
+               {nutritionError === 'timeout' && (
+                 <button 
+                  onClick={fetchEnrichment}
+                  className="mt-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                  style={{ color: '#D63434' }}
+                 >
+                   <RefreshCcw size={12} /> Retry nutrition search
+                 </button>
+               )}
             </div>
           )}
 
@@ -93,24 +134,24 @@ export const ResultCard = ({ plant }) => {
 
           <div className="grid grid-cols-1 gap-4 pt-4">
             <SectionCard title="HABITAT & ORIGIN" icon={MapPin}>
-              <p className="text-emerald-950 font-bold leading-relaxed">Verified botanical distribution data suggests specific climatic requirements for this species.</p>
+              <p className="font-bold leading-relaxed" style={{ color: '#6B0000' }}>Verified botanical distribution data suggests specific climatic requirements for this species.</p>
             </SectionCard>
             
             <SectionCard title="BOTANICAL HISTORY" icon={History}>
-              <p className="text-emerald-950 font-bold leading-relaxed">{plant.funFact || 'This species has significant ecological and cultural history.'}</p>
+              <p className="font-bold leading-relaxed" style={{ color: '#6B0000' }}>{plant.funFact || 'This species has significant ecological and cultural history.'}</p>
             </SectionCard>
           </div>
         </div>
 
         {/* Video Feed - Grounded Results */}
         <div className="bg-black/10 p-8 border-t border-black/5">
-           <h3 className="text-[10px] font-black text-emerald-950/60 uppercase tracking-widest flex items-center gap-2 mb-6">
+           <h3 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mb-6" style={{ color: '#D63434' }}>
              <Youtube size={16} className="text-red-700" /> CULINARY PREPARATION & RECIPES
            </h3>
            {loadingVideos ? (
              <div className="flex flex-col items-center justify-center py-12 gap-3">
-               <Loader2 className="animate-spin text-emerald-950" size={24} />
-               <span className="text-[10px] font-black text-emerald-950/50 uppercase tracking-widest">Searching Recipes...</span>
+               <Loader2 className="animate-spin" style={{ color: '#D63434' }} size={24} />
+               <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#D63434', opacity: 0.5 }}>Searching Recipes...</span>
              </div>
            ) : videos.length > 0 ? (
              <div className="grid grid-cols-1 gap-6">
@@ -120,7 +161,7 @@ export const ResultCard = ({ plant }) => {
              </div>
            ) : (
              <div className="text-center py-8">
-               <p className="text-[10px] font-black text-emerald-950/40 uppercase tracking-widest">No culinary videos found for this specific species</p>
+               <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#6B0000', opacity: 0.4 }}>No recipe videos found for this specific species</p>
              </div>
            )}
         </div>

@@ -29,11 +29,10 @@ export const videoRecommendationService = {
     const ai = new GoogleGenAI({ apiKey: API_KEY });
 
     try {
-      // Refined prompt for 'Useful and Meaningful' recipe videos
       const prompt = `Perform a Google Search for real YouTube videos showing culinary recipes and cooking methods using "${plantName}". 
-      Focus on traditional or modern recipes that demonstrate preparation. 
-      Return a JSON array of 3 objects with "title", "channel", "link" (actual https://www.youtube.com/watch?v=... URL), and a specific "reason" why this video is helpful for someone who found this plant. 
-      JSON ONLY: [{"title": "...", "channel": "...", "link": "...", "reason": "..."}]`;
+      Focus on traditional or modern recipes. Find real videos.
+      Return a JSON array of up to 3 objects with "title", "channel", "link" (actual https://www.youtube.com/watch?v=... URL), "duration" (e.g. "5:30"), and a specific "reason" why this video is helpful. 
+      JSON ONLY: [{"title": "...", "channel": "...", "link": "...", "duration": "...", "reason": "..."}]`;
 
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
