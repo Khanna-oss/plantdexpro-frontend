@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/genai";
-import { healthProfileService } from "./healthProfileService.js";
+import { aiNutritionLookup } from "./aiNutritionLookup.js";
 import { videoRecommendationService } from "./videoRecommendationService.js";
 
 const API_KEY = process.env.API_KEY || '';
@@ -43,7 +43,6 @@ export const plantDexService = {
     };
 
     try {
-      // Use flash-preview for rapid identification, but strict instructions for non-generic data
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: [{ 
@@ -63,13 +62,13 @@ export const plantDexService = {
       if (data.plants?.[0]) {
         const p = data.plants[0];
         
-        // Parallel fetch for grounded Truthful Nutrition data
+        // Use the new AI Nutrition Pipeline for edible species
         if (p.isEdible) {
-          const healthData = await healthProfileService.getProfile(p.commonName, p.scientificName, true);
-          if (healthData) {
-            p.nutrients = healthData.nutrients;
-            p.healthHints = healthData.healthHints;
-            p.edibleParts = healthData.edibleParts;
+          const tags = p.visualFeatures?.map(f => f.reason) || [];
+          const nutritionData = await aiNutritionLookup.fetchNutrition(p.commonName, p.scientificName, tags);
+          if (nutritionData) {
+            p.nutrients = nutritionData.nutrients;
+            p.healthHints = nutritionData.healthHints;
           }
         }
         

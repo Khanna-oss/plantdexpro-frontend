@@ -7,9 +7,10 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
-      // FIX: Added 'env.API_Key' to match your Vercel screenshot settings
+      // Robust definition for Vercel deployment:
+      // Defines only specific environment variables to avoid collisions with Node 'process' globals.
       'process.env.API_KEY': JSON.stringify(env.API_KEY || env.API_Key || env.VITE_API_KEY || ''),
-      'process.env': {}
+      'process.env.NODE_ENV': JSON.stringify(mode),
     },
     build: {
       sourcemap: false,
