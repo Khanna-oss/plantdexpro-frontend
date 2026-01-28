@@ -53,12 +53,12 @@ export const aiNutritionLookup = {
     };
 
     try {
-      // Prompt specifically asks to avoid placeholder "Analyzing..." text
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Provide safety-verified botanical nutrition data for: ${scientificName} (${plantName}).
-        IMPORTANT: Use Google Search. If specific data is not found, do not hallucinate "Analyzing..." or generic phrases. Instead, return a confidence score below 60.
-        Visual Features: ${tags.join(', ')}.`,
+        contents: `Provide grounded botanical nutrition data for: ${scientificName} (${plantName}).
+        IMPORTANT: DO NOT use filler phrases like "Analyzing", "Calculating", or "Determining". 
+        If specific data is not available from verified sources, return a confidence score below 60.
+        Visual Features for reference: ${tags.join(', ')}.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: schema
@@ -68,12 +68,11 @@ export const aiNutritionLookup = {
       const result = JSON.parse(response.text);
 
       if (result && result.confidence >= 60 && result.nutrients) {
-        // Double check for filler text in the model's JSON response
-        const filler = ['analyzing', 'calculating', 'placeholder', 'searching'];
-        const isFiller = (s) => s && filler.some(f => s.toLowerCase().includes(f));
+        // Robust check to ensure no "Analyzing..." text survived the prompt
+        const filler = ['analyzing', 'calculating', 'placeholder', 'searching', 'determining'];
+        const isFiller = (s) => s && typeof s === 'string' && filler.some(f => s.toLowerCase().includes(f));
         
         if (isFiller(result.nutrients.vitamins) || isFiller(result.nutrients.minerals)) {
-          console.warn("[NutritionLookup] Rejected filler content");
           return null;
         }
 

@@ -7,11 +7,18 @@ export const HealthBenefits = ({ plant, isLoading }) => {
   const nutrients = plant.nutrients || null;
   const healthHints = plant.healthHints || [];
 
-  // Helper to detect if we have real data or just filler strings from a failed/partial ID
+  /**
+   * Stricter filter to prevent "Analyzing..." strings from being shown
+   * directly from your screenshot findings.
+   */
   const isRealData = (text) => {
-    if (!text) return false;
-    const fillerPhrases = ['analyzing', 'determining', 'calculating', 'searching', 'primary vitamins'];
-    return !fillerPhrases.some(phrase => text.toLowerCase().includes(phrase));
+    if (!text || typeof text !== 'string') return false;
+    const fillerPhrases = [
+      'analyzing', 'determining', 'calculating', 'searching', 
+      'primary vitamins', 'composition', 'levels', 'processing'
+    ];
+    const lowerText = text.toLowerCase();
+    return !fillerPhrases.some(phrase => lowerText.includes(phrase)) && text.length > 5;
   };
 
   const renderNutrientValue = (value, label) => {
@@ -19,17 +26,19 @@ export const HealthBenefits = ({ plant, isLoading }) => {
       return (
         <div className="flex items-center gap-2">
           <Loader2 size={12} className="animate-spin text-[#D63434]" />
-          <p className="text-xs font-bold text-[#D63434]">Retrieving {label}...</p>
+          <p className="text-xs font-black text-[#D63434]">Retrieving {label}...</p>
         </div>
       );
     }
+    
     if (nutrients && isRealData(value)) {
       return <p className="text-sm font-black leading-tight text-[#D63434]">{value}</p>;
     }
+
     return (
-      <div className="flex items-center gap-1.5 opacity-60">
+      <div className="flex items-center gap-1.5 opacity-80">
         <AlertCircle size={10} className="text-[#D63434]" />
-        <p className="text-[10px] font-bold italic text-[#D63434]">Data not found for this species</p>
+        <p className="text-[10px] font-black italic text-[#D63434]">Detailed profile unavailable</p>
       </div>
     );
   };
@@ -45,27 +54,27 @@ export const HealthBenefits = ({ plant, isLoading }) => {
 
       <div className="space-y-3">
         {/* Vitamins Card */}
-        <div className="bg-white/40 rounded-2xl p-4 border border-black/5 shadow-sm transition-all hover:bg-white/60">
-          <span className="text-[9px] font-black uppercase tracking-widest block mb-1 text-[#6B0000] opacity-70">SPECIFIC VITAMINS</span>
+        <div className="bg-white/50 rounded-2xl p-4 border border-black/5 shadow-sm transition-all hover:bg-white/70">
+          <span className="text-[9px] font-black uppercase tracking-widest block mb-1 text-[#6B0000] opacity-60">SPECIFIC VITAMINS</span>
           {renderNutrientValue(nutrients?.vitamins, "vitamins")}
         </div>
 
         {/* Minerals Card */}
-        <div className="bg-white/40 rounded-2xl p-4 border border-black/5 shadow-sm transition-all hover:bg-white/60">
-          <span className="text-[9px] font-black uppercase tracking-widest block mb-1 text-[#6B0000] opacity-70">KEY MINERALS</span>
+        <div className="bg-white/50 rounded-2xl p-4 border border-black/5 shadow-sm transition-all hover:bg-white/70">
+          <span className="text-[9px] font-black uppercase tracking-widest block mb-1 text-[#6B0000] opacity-60">KEY MINERALS</span>
           {renderNutrientValue(nutrients?.minerals, "minerals")}
         </div>
 
         {/* Proteins Card */}
-        <div className="bg-white/40 rounded-2xl p-4 border border-black/5 shadow-sm transition-all hover:bg-white/60">
-          <span className="text-[9px] font-black uppercase tracking-widest block mb-1 text-[#6B0000] opacity-70">PROTEIN & AMINO ACIDS</span>
+        <div className="bg-white/50 rounded-2xl p-4 border border-black/5 shadow-sm transition-all hover:bg-white/70">
+          <span className="text-[9px] font-black uppercase tracking-widest block mb-1 text-[#6B0000] opacity-60">PROTEIN & AMINO ACIDS</span>
           {renderNutrientValue(nutrients?.proteins, "proteins")}
         </div>
       </div>
 
       {healthHints.length > 0 && isRealData(healthHints[0]?.label) && (
         <div className="mt-8">
-          <h4 className="text-[10px] font-black uppercase tracking-widest mb-4 text-[#D63434]">IDENTIFIED BENEFITS</h4>
+          <h4 className="text-[10px] font-black uppercase tracking-widest mb-4 text-[#D63434]">BOTANICAL HEALTH HINTS</h4>
           <div className="space-y-4">
             {healthHints.map((hint, idx) => (
               <div key={idx} className="flex gap-3 items-start group">
@@ -79,7 +88,7 @@ export const HealthBenefits = ({ plant, isLoading }) => {
                     </h5>
                     <ExternalLink size={10} className="text-[#D63434] opacity-30" />
                   </div>
-                  <p className="text-[10px] leading-relaxed mt-0.5 font-bold text-[#D63434] opacity-80">
+                  <p className="text-[10px] leading-relaxed mt-0.5 font-bold text-[#6B0000] opacity-80">
                     {hint.desc}
                   </p>
                 </div>

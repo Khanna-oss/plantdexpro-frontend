@@ -1,9 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { youtubeCacheService } from "./youtubeCacheService.js";
 
-/**
- * Validates and cleans video objects found by the AI.
- */
 const _validateVideos = (videos) => {
   if (!Array.isArray(videos)) return [];
   return videos.filter(video => {
@@ -31,12 +28,11 @@ export const videoRecommendationService = {
     const ai = new GoogleGenAI({ apiKey: API_KEY });
 
     try {
-      const prompt = `Find real YouTube videos (title, channel, link) showing ${context} for "${plantName}". 
-      You MUST use Google Search to find actual existing videos.
-      Return a JSON array of up to 3 objects. 
-      JSON format ONLY: [{"title": "Video Name", "channel": "Channel Name", "link": "https://www.youtube.com/watch?v=...", "duration": "M:SS", "reason": "why useful"}]`;
+      const prompt = `Search for REAL YouTube video recipes for the plant: "${plantName}".
+      You MUST use the Google Search tool to find actual live links.
+      Find at least 3 videos with valid youtube.com/watch?v= URLs.
+      Return strictly a JSON array: [{"title": "Title", "channel": "Channel", "link": "https://www.youtube.com/watch?v=...", "duration": "M:SS", "reason": "why this recipe is good"}]`;
 
-      // Use gemini-3-pro-preview for high-quality web search integration
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
         contents: prompt,
@@ -46,14 +42,13 @@ export const videoRecommendationService = {
       });
 
       const text = response.text || "";
-      // Extract JSON array robustly even if conversational text is present
       const jsonMatch = text.match(/\[\s*\{[\s\S]*\}\s*\]/);
       let videos = [];
       if (jsonMatch) {
         try {
           videos = JSON.parse(jsonMatch[0]);
         } catch (e) { 
-          console.warn("YouTube JSON Parse Error", e); 
+          console.warn("Recipe JSON Parse Error", e); 
         }
       }
 
@@ -63,7 +58,7 @@ export const videoRecommendationService = {
       }
       return validVideos;
     } catch (error) {
-      console.error("YouTube Search Failed:", error);
+      console.error("Recipe Search Pipeline Failed:", error);
       return [];
     }
   }
