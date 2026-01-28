@@ -16,12 +16,13 @@
 }
 
 body {
-  background-color: var(--soil-medium);
+  background-color: var(--soil-deep);
   color: var(--cream);
   font-family: 'Inter', sans-serif;
   overflow-x: hidden;
 }
 
+/* Watermark with broad black outline as requested */
 .save-soil-watermark {
   position: fixed;
   font-size: 15vw;
@@ -31,9 +32,10 @@ body {
   z-index: 0;
   white-space: nowrap;
   text-transform: uppercase;
-  -webkit-text-stroke: 1px rgba(245, 245, 220, 0.04);
-  opacity: 0.15;
+  -webkit-text-stroke: 3px #000000;
+  opacity: 0.25;
   user-select: none;
+  filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
 }
 
 .parrot-green-card {

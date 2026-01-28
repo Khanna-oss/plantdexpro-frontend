@@ -28,10 +28,11 @@ export const videoRecommendationService = {
     const ai = new GoogleGenAI({ apiKey: API_KEY });
 
     try {
-      const prompt = `Search for REAL YouTube video recipes for the plant: "${plantName}".
+      // Prompt enhanced to find recipes OR care/botanical guides to ensure content is always found
+      const prompt = `Search for REAL YouTube videos for the plant: "${plantName}".
+      Find either recipe preparation videos (if edible) or detailed plant care/botanical guides.
       You MUST use the Google Search tool to find actual live links.
-      Find at least 3 videos with valid youtube.com/watch?v= URLs.
-      Return strictly a JSON array: [{"title": "Title", "channel": "Channel", "link": "https://www.youtube.com/watch?v=...", "duration": "M:SS", "reason": "why this recipe is good"}]`;
+      Return strictly a JSON array: [{"title": "Title", "channel": "Channel", "link": "https://www.youtube.com/watch?v=...", "duration": "M:SS", "reason": "why this video is relevant for this plant"}]`;
 
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
@@ -48,7 +49,7 @@ export const videoRecommendationService = {
         try {
           videos = JSON.parse(jsonMatch[0]);
         } catch (e) { 
-          console.warn("Recipe JSON Parse Error", e); 
+          console.warn("Recommendation JSON Parse Error", e); 
         }
       }
 
@@ -58,7 +59,7 @@ export const videoRecommendationService = {
       }
       return validVideos;
     } catch (error) {
-      console.error("Recipe Search Pipeline Failed:", error);
+      console.error("Video Search Pipeline Failed:", error);
       return [];
     }
   }

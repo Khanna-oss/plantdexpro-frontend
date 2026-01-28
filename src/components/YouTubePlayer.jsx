@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Loader2, Youtube, ExternalLink, Sparkles, Clock, Info, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-// Enforce exact lowercase to match GitHub on Linux environments
-import { youtubeThumbnailCache } from '../services/youtubeThumbnailCache';
+// Explicit .js extension to resolve Vercel build issues on case-sensitive Linux environments
+import { youtubeThumbnailCache } from '../services/youtubeThumbnailCache.js';
 
 const getYoutubeId = (url) => {
   if (!url) return null;
@@ -29,9 +29,9 @@ export const YouTubePlayer = ({ video, isActive, onPlay }) => {
     return (
       <div className="bg-black/40 rounded-[2rem] p-10 text-center border border-dashed border-white/10">
         <Youtube className="mx-auto mb-4 text-[#F5F5DC]/30" size={40} />
-        <p className="text-[11px] font-black uppercase text-[#F5F5DC] opacity-50 tracking-widest mb-4">No recipe videos found for this species.</p>
+        <p className="text-[11px] font-black uppercase text-[#F5F5DC] opacity-50 tracking-widest mb-4">No video content found.</p>
         <button className="px-6 py-2.5 bg-[#D63434] text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl">
-          Search Community
+          <Search size={12} className="inline mr-2" /> Explore Community
         </button>
       </div>
     );
@@ -82,14 +82,14 @@ export const YouTubePlayer = ({ video, isActive, onPlay }) => {
                 <Play fill="white" className="text-white ml-1" size={32} />
               </motion.div>
               <div className="mt-4 px-6 py-2 bg-[#CCFF00] text-[#1D3B23] rounded-full text-[11px] font-black uppercase tracking-[0.2em] transform translate-y-4 opacity-0 group-hover/player:translate-y-0 group-hover/player:opacity-100 transition-all duration-500 shadow-xl">
-                Play Recipe
+                Watch Now
               </div>
             </div>
 
             <div className="absolute top-4 left-4">
                <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
                   <Sparkles size={10} className="text-[#CCFF00]" />
-                  <span className="text-[9px] font-black text-white uppercase tracking-widest">Recommended Match</span>
+                  <span className="text-[9px] font-black text-white uppercase tracking-widest">Botanical Guide</span>
                </div>
             </div>
           </button>
@@ -132,7 +132,7 @@ export const YouTubePlayer = ({ video, isActive, onPlay }) => {
             >
               <div className="mt-4 p-5 rounded-2xl bg-white/5 border border-white/5">
                 <p className="text-[11px] text-[#F5F5DC]/80 italic leading-relaxed">
-                  <span className="font-black uppercase text-[9px] block mb-1.5 text-[#CCFF00]">Expert Rationale:</span>
+                  <span className="font-black uppercase text-[9px] block mb-1.5 text-[#CCFF00]">AI Insight:</span>
                   "{video.reason}"
                 </p>
               </div>
