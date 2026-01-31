@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Loader2, Youtube, ExternalLink, Sparkles, Clock, Info, Search } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-// Explicit .js extension to resolve Vercel build issues on case-sensitive Linux environments
+import { Play, Loader2, Youtube, ExternalLink, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
+// Explicit path to resolve build environment issues
 import { youtubeThumbnailCache } from '../services/youtubeThumbnailCache.js';
 
 const getYoutubeId = (url) => {
@@ -13,37 +13,18 @@ const getYoutubeId = (url) => {
 
 export const YouTubePlayer = ({ video, isActive, onPlay }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [showReason, setShowReason] = useState(false);
   const [thumbError, setThumbError] = useState(false);
   
   const videoId = getYoutubeId(video.link);
 
-  useEffect(() => {
-    if (!isActive) {
-      setIsLoading(true);
-      setThumbError(false);
-    }
-  }, [isActive]);
+  if (!videoId) return null;
 
-  if (!videoId) {
-    return (
-      <div className="bg-black/40 rounded-[2rem] p-10 text-center border border-dashed border-white/10">
-        <Youtube className="mx-auto mb-4 text-[#F5F5DC]/30" size={40} />
-        <p className="text-[11px] font-black uppercase text-[#F5F5DC] opacity-50 tracking-widest mb-4">No video content found.</p>
-        <button className="px-6 py-2.5 bg-[#D63434] text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl">
-          <Search size={12} className="inline mr-2" /> Explore Community
-        </button>
-      </div>
-    );
-  }
-
-  const cachedThumb = youtubeThumbnailCache.get(videoId);
   const thumbnailUrl = thumbError 
     ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
-    : (cachedThumb || `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`);
+    : `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
 
   return (
-    <div className="relative rounded-[2rem] overflow-hidden bg-black/20 border border-white/5 shadow-2xl group/player transition-all duration-500 hover:border-white/20">
+    <div className="relative rounded-[2rem] overflow-hidden bg-black/20 border border-white/10 shadow-lg group/player transition-all hover:border-white/30">
       {isActive ? (
         <div className="relative aspect-video bg-black">
           {isLoading && (
@@ -53,9 +34,9 @@ export const YouTubePlayer = ({ video, isActive, onPlay }) => {
           )}
           <iframe
             className="absolute top-0 left-0 w-full h-full z-20"
-            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&rel=0&modestbranding=1&controls=1`}
+            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`}
             title={video.title}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allow="autoplay; encrypted-media; picture-in-picture"
             allowFullScreen
             onLoad={() => setIsLoading(false)}
           ></iframe>
@@ -64,82 +45,33 @@ export const YouTubePlayer = ({ video, isActive, onPlay }) => {
         <div className="relative">
           <button 
             onClick={onPlay}
-            className="relative w-full aspect-video block overflow-hidden group-hover/player:bg-black"
-            aria-label={`Play recipe: ${video.title}`}
+            className="relative w-full aspect-video block overflow-hidden"
           >
             <img 
               src={thumbnailUrl} 
-              className="w-full h-full object-cover transition-transform duration-1000 group-hover/player:scale-110 group-hover/player:opacity-40" 
+              className="w-full h-full object-cover opacity-60 group-hover/player:opacity-80 transition-all duration-700" 
               alt={video.title}
               onError={() => setThumbError(true)}
             />
             
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <motion.div 
-                whileHover={{ scale: 1.15 }}
-                className="w-20 h-20 rounded-full bg-[#D63434] border-4 border-white/40 flex items-center justify-center shadow-2xl z-10"
+                whileHover={{ scale: 1.1 }}
+                className="w-16 h-16 rounded-full bg-[#D63434] flex items-center justify-center shadow-2xl z-10"
               >
-                <Play fill="white" className="text-white ml-1" size={32} />
+                <Play fill="white" className="text-white ml-1" size={24} />
               </motion.div>
-              <div className="mt-4 px-6 py-2 bg-[#CCFF00] text-[#1D3B23] rounded-full text-[11px] font-black uppercase tracking-[0.2em] transform translate-y-4 opacity-0 group-hover/player:translate-y-0 group-hover/player:opacity-100 transition-all duration-500 shadow-xl">
-                Watch Now
-              </div>
             </div>
 
-            <div className="absolute top-4 left-4">
-               <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
-                  <Sparkles size={10} className="text-[#CCFF00]" />
-                  <span className="text-[9px] font-black text-white uppercase tracking-widest">Botanical Guide</span>
+            <div className="absolute bottom-4 left-4 right-4">
+               <div className="bg-black/60 backdrop-blur-md px-3 py-2 rounded-xl border border-white/10">
+                  <p className="text-[11px] font-black text-white line-clamp-1 leading-tight">{video.title}</p>
+                  <p className="text-[9px] font-bold text-white/60 mt-0.5">{video.channel}</p>
                </div>
             </div>
           </button>
         </div>
       )}
-
-      <div className="p-8">
-        <div className="flex justify-between items-start gap-4 mb-2">
-          <h4 className="text-base font-black text-[#F5F5DC] line-clamp-2 tracking-tight leading-tight group-hover/player:text-[#CCFF00] transition-colors">
-            {video.title}
-          </h4>
-          <div className="flex items-center gap-2 shrink-0">
-            {video.reason && (
-              <button 
-                onClick={() => setShowReason(!showReason)}
-                className={`p-2.5 rounded-full transition-all ${showReason ? 'bg-[#CCFF00] text-[#1D3B23]' : 'bg-white/5 text-[#F5F5DC]/60 hover:bg-white/10'}`}
-              >
-                <Info size={16} />
-              </button>
-            )}
-            <a 
-              href={video.link} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="p-2.5 rounded-full bg-white/5 text-[#F5F5DC]/60 hover:bg-white/10 transition-colors"
-            >
-              <ExternalLink size={16} />
-            </a>
-          </div>
-        </div>
-        <p className="text-[10px] font-bold text-[#F5F5DC]/40 uppercase tracking-[0.2em]">{video.channel}</p>
-        
-        <AnimatePresence>
-          {showReason && (
-            <motion.div 
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden"
-            >
-              <div className="mt-4 p-5 rounded-2xl bg-white/5 border border-white/5">
-                <p className="text-[11px] text-[#F5F5DC]/80 italic leading-relaxed">
-                  <span className="font-black uppercase text-[9px] block mb-1.5 text-[#CCFF00]">AI Insight:</span>
-                  "{video.reason}"
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
     </div>
   );
 };

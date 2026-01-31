@@ -13,6 +13,7 @@
   --parrot-green: #98FB98;
   --status-red: #c62828;
   --content-red: #6B0000;
+  --forest-green: #1D3B23;
 }
 
 body {
@@ -22,7 +23,7 @@ body {
   overflow-x: hidden;
 }
 
-/* Watermark with broad black outline as requested */
+/* SAVE SOIL Research Watermark */
 .save-soil-watermark {
   position: fixed;
   font-size: 15vw;
@@ -32,15 +33,14 @@ body {
   z-index: 0;
   white-space: nowrap;
   text-transform: uppercase;
-  -webkit-text-stroke: 3px #000000;
-  opacity: 0.25;
+  -webkit-text-stroke: 4px rgba(0,0,0,0.5);
+  opacity: 0.15;
   user-select: none;
-  filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
 }
 
 .parrot-green-card {
   background-color: var(--parrot-green) !important;
-  color: var(--content-red) !important;
+  color: var(--forest-green) !important;
 }
 
 @keyframes scan-line {
