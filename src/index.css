@@ -23,7 +23,7 @@ body {
   overflow-x: hidden;
 }
 
-/* SAVE SOIL Research Watermark */
+/* SAVE OUR SOIL Research Watermark - Broad Black Outline */
 .save-soil-watermark {
   position: fixed;
   font-size: 15vw;
@@ -33,9 +33,11 @@ body {
   z-index: 0;
   white-space: nowrap;
   text-transform: uppercase;
-  -webkit-text-stroke: 4px rgba(0,0,0,0.5);
-  opacity: 0.15;
+  /* Requested broad black outline */
+  -webkit-text-stroke: 4px #000000;
+  opacity: 0.3;
   user-select: none;
+  filter: drop-shadow(0 0 15px rgba(0,0,0,0.4));
 }
 
 .parrot-green-card {
