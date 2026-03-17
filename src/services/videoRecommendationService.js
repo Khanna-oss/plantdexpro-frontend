@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { youtubeCacheService } from "./youtubeCacheService.js";
+import { youtubeCacheService } from "./youtubecacheservice.js";
 
 const _validateVideos = (videos) => {
   if (!Array.isArray(videos)) return [];

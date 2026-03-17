@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  ShieldCheck, MapPin, History, Youtube, Loader2, Leaf, RefreshCcw, Info
+  ShieldCheck, MapPin, History, Youtube, Loader2, Leaf, RefreshCcw, Info, Shield, ShieldAlert
 } from 'lucide-react';
-import { plantDexService } from '../services/plantDexService.js';
-import { aiNutritionLookup } from '../services/aiNutritionLookup.js';
+import { plantDexService } from '../services/plantdexservice.js';
+import { aiNutritionLookup } from '../services/ainutritionlookup.js';
 import { YouTubePlayer } from './YouTubePlayer.jsx';
 import { AICondensedSummary } from './AICondensedSummary.jsx';
 import { SectionCard } from './SectionCard.jsx';
 import { HealthBenefits } from './HealthBenefits.jsx';
-import { GradCamView } from './GradCamView.jsx';
 import { AcademicMetrics } from './AcademicMetrics.jsx';
 
 export const ResultCard = ({ plant: initialPlant }) => {
@@ -19,13 +18,13 @@ export const ResultCard = ({ plant: initialPlant }) => {
   const [loadingNutrition, setLoadingNutrition] = useState(false);
   const [activeVideoUrl, setActiveVideoUrl] = useState(null);
 
-  const confidenceScore = plant.uiConfidence || Math.round((plant.confidenceScore || 0) * 100) || 94;
+  const confidenceScore = plant.xaiMeta?.confidence || plant.uiConfidence || Math.round((plant.confidenceScore || 0) * 100) || 94;
   
   const modelInfo = {
     name: "Ensemble V3 (MobileNetV2 + Gemini 3 Pro)",
-    accuracy: 94.2,
-    latency: 1240,
-    dataset: "DW-U1 Research Repository"
+    accuracy: confidenceScore,
+    latency: plant.xaiMeta?.latency || 1240,
+    dataset: plant.etlVerified ? "ETL Ground Truth Warehouse" : "DW-U1 Research Repository"
   };
 
   const fetchEnrichment = async () => {
@@ -70,11 +69,19 @@ export const ResultCard = ({ plant: initialPlant }) => {
       <div className="parrot-green-card rounded-[2.5rem] border border-black/10 shadow-2xl overflow-hidden">
         
         <div className="p-8 pb-4">
-          <div className="flex items-center justify-between mb-6">
-            <div className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase ${
-              plant.isEdible ? 'bg-emerald-900 text-emerald-50' : 'bg-rose-950 text-rose-50'
-            }`}>
-              {plant.isEdible ? 'Botanical Food Grade' : 'Warning: Non-Edible'}
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-2">
+              <div className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase ${
+                plant.isEdible ? 'bg-emerald-900 text-emerald-50' : 'bg-rose-950 text-rose-50'
+              }`}>
+                {plant.isEdible ? 'Botanical Food Grade' : 'Warning: Non-Edible'}
+              </div>
+              <div className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase flex items-center gap-2 ${
+                plant.etlVerified ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
+              }`}>
+                {plant.etlVerified ? <Shield size={10} /> : <ShieldAlert size={10} />}
+                {plant.etlVerified ? 'ETL Verified' : 'Inference Only'}
+              </div>
             </div>
             <div className="flex items-center gap-2 text-[#1D3B23]/70">
                <ShieldCheck size={14} />

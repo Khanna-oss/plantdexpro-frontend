@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/genai";
-import { aiNutritionLookup } from "./aiNutritionLookup.js";
-import { videoRecommendationService } from "./videoRecommendationService.js";
+import { aiNutritionLookup } from "./ainutritionlookup.js";
+import { videoRecommendationService } from "./videorecommendationservice.js";
 
 export const plantDexService = {
   identifyPlant: async (base64Image) => {

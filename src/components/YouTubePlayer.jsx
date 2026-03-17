@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Loader2, Youtube, ExternalLink, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
-// Fixed resolution for Vercel: explicit lowercase to match the file name
-import { youtubeThumbnailCache } from '../services/youtubeThumbnailCache.js';
+// CRITICAL: Standardized to strictly lowercase filename for Vercel/Linux build compatibility
+import { youtubeThumbnailCache } from '../services/youtubethumbnailcache.js';
 
 const getYoutubeId = (url) => {
   if (!url) return null;
@@ -19,10 +19,18 @@ export const YouTubePlayer = ({ video, isActive, onPlay }) => {
 
   if (!videoId) return null;
 
-  // Use hqdefault as fallback if maxresdefault doesn't exist (common for older/lower res videos)
+  // Use hqdefault as fallback if maxresdefault doesn't exist
+  const cachedThumb = youtubeThumbnailCache.get(videoId);
   const thumbnailUrl = thumbError 
     ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
-    : (youtubeThumbnailCache.get(videoId) || `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`);
+    : (cachedThumb || `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`);
+
+  useEffect(() => {
+    if (!thumbError && !cachedThumb) {
+      // Simple logic to cache the first successful thumbnail URL found
+      youtubeThumbnailCache.set(videoId, `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`);
+    }
+  }, [videoId, thumbError, cachedThumb]);
 
   return (
     <div className="relative rounded-[2rem] overflow-hidden bg-black/40 border border-white/10 shadow-2xl group/player transition-all duration-500 hover:border-white/30">

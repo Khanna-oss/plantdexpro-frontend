@@ -1,44 +1,58 @@
-/**
- * Simple persistent cache for YouTube thumbnail metadata.
- * Helps reduce layout shift and prevents repeated fetches.
- */
 
-const THUMBNAIL_CACHE_KEY = 'plantdex_thumb_cache_v2';
-const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
+const CACHE_PREFIX = 'plantdex_yt_';
+const TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-export const youtubeThumbnailCache = {
+export const youtubeCacheService = {
   /**
-   * Retrieves a cached thumbnail URL for a given video ID.
+   * Generates a cache key based on query and context
    */
-  get: (videoId) => {
+  generateKey: (query, context) => {
+    return `${CACHE_PREFIX}${context}_${query.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+  },
+
+  /**
+   * Retrieves data from local storage if valid
+   */
+  get: (key) => {
     try {
-      const cache = JSON.parse(localStorage.getItem(THUMBNAIL_CACHE_KEY) || '{}');
-      const entry = cache[videoId];
-      if (entry && (Date.now() - entry.cachedAt < CACHE_EXPIRY)) {
-        return entry.thumbnailUrl;
+      const item = localStorage.getItem(key);
+      if (!item) return null;
+      
+      const { value, timestamp } = JSON.parse(item);
+      
+      // Check Expiry
+      if (Date.now() - timestamp > TTL) {
+        localStorage.removeItem(key);
+        return null;
       }
-      return null;
+      
+      return value;
     } catch (e) {
+      console.warn("Cache retrieval failed", e);
       return null;
     }
   },
 
   /**
-   * Stores a thumbnail URL for a given video ID.
+   * Saves data to local storage with timestamp
    */
-  set: (videoId, thumbnailUrl) => {
+  set: (key, value) => {
     try {
-      const cache = JSON.parse(localStorage.getItem(THUMBNAIL_CACHE_KEY) || '{}');
-      cache[videoId] = {
-        thumbnailUrl,
-        cachedAt: Date.now(),
-        expiresAt: Date.now() + CACHE_EXPIRY
-      };
-      localStorage.setItem(THUMBNAIL_CACHE_KEY, JSON.stringify(cache));
+      const payload = JSON.stringify({
+        value,
+        timestamp: Date.now()
+      });
+      localStorage.setItem(key, payload);
     } catch (e) {
-      // If storage is full, clear it and try once more
-      localStorage.removeItem(THUMBNAIL_CACHE_KEY);
-      console.warn("YouTube Thumbnail Cache was cleared due to storage limits.");
+      // Handle quota exceeded
+      console.warn("Cache storage failed (Quota Exceeded?)", e);
+      // Optional: Clear old cache items here if needed
+      try {
+        localStorage.clear();
+        localStorage.setItem(key, JSON.stringify({ value, timestamp: Date.now() }));
+      } catch (retryErr) {
+        console.error("Cache completely failed", retryErr);
+      }
     }
   }
 };
