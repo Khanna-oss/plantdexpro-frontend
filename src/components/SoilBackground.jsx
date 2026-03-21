@@ -3,16 +3,16 @@ import { motion } from 'framer-motion';
 
 export const SoilBackground = () => {
   return (
-    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none bg-[#261a10]">
-      {/* Texture Layer */}
-      <div className="absolute inset-0 opacity-50 mix-blend-multiply" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/p6.png")' }} />
+    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none" style={{ backgroundColor: '#4B3621' }}>
+      {/* Enhanced Texture Layer */}
+      <div className="absolute inset-0 opacity-40 mix-blend-multiply" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/p6.png")' }} />
       
-      {/* High-Impact Black Outline Watermarks */}
+      {/* High-Impact Black Outline Watermarks with Enhanced Visibility */}
       <motion.div 
         initial={{ opacity: 0, scale: 1.1 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 2 }}
-        className="save-soil-watermark top-[10%] -left-[5%] -rotate-[12deg]"
+        className="save-soil-watermark top-[8%] -left-[3%] -rotate-[12deg]"
       >
         SAVE OUR SOIL
       </motion.div>
@@ -21,16 +21,20 @@ export const SoilBackground = () => {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 2.5 }}
-        className="save-soil-watermark bottom-[15%] -right-[10%] rotate-[6deg]"
+        className="save-soil-watermark bottom-[12%] -right-[8%] rotate-[6deg]"
       >
         SAVE OUR SOIL
       </motion.div>
 
-      {/* Earth Core Shadowing */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+      {/* Enhanced Earth Core Shadowing for Better Contrast */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
       
-      {/* Center Depth Radiance */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vw] bg-[#8b5a2b]/20 blur-[200px] rounded-full" />
+      {/* Center Depth Radiance with Soil Theme */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vw] bg-[#8b5a2b]/15 blur-[180px] rounded-full" />
+      
+      {/* Additional Soil-themed Accent Lights */}
+      <div className="absolute top-1/4 left-1/4 w-[80vw] h-[80vw] bg-[#c79016]/8 blur-[120px] rounded-full" />
+      <div className="absolute bottom-1/3 right-1/3 w-[60vw] h-[60vw] bg-[#556b2f]/6 blur-[100px] rounded-full" />
     </div>
   );
 };

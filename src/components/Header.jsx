@@ -3,17 +3,20 @@ import { Sun, Moon, Leaf } from 'lucide-react';
 
 export const Header = ({ theme, toggleTheme }) => {
   return (
-    <header className="py-4 shadow-md bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+    <header className="sticky top-0 z-50 px-4 sm:px-6 lg:px-8 pt-4">
+      <div className="container mx-auto soil-shell px-4 sm:px-6 py-4 flex justify-between items-center">
         <div className="flex items-center space-x-3">
-          <div className="bg-emerald-100 dark:bg-emerald-900/30 p-2 rounded-lg">
-            <Leaf className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+          <div className="glass-card p-2.5">
+            <Leaf className="w-6 h-6 text-[var(--golden-soil)]" />
           </div>
-          <span className="text-xl font-bold text-gray-800 dark:text-white">PlantDexPro</span>
+          <div>
+            <span className="block text-2xl font-heading text-[var(--cream)] leading-none">PlantDexPro</span>
+            <span className="block text-[10px] font-black uppercase tracking-[0.28em] text-[var(--golden-soil)] mt-1">Save Soil XAI Console</span>
+          </div>
         </div>
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 dark:focus:ring-offset-gray-800 transition-colors"
+          className="glass-card p-3 text-[var(--cream)] hover:text-[var(--golden-soil)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--golden-soil)] transition-colors"
           aria-label="Toggle dark mode"
         >
           {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}

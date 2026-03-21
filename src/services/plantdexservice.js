@@ -61,22 +61,35 @@ export const plantDexService = {
       if (data.plants?.[0]) {
         const p = data.plants[0];
         
+        // Check for cross-verification in local cache
+        const verificationStatus = plantDexService.checkVerificationStatus(p.scientificName, p.commonName);
+        p.etlVerified = verificationStatus.isVerified;
+        p.verificationCount = verificationStatus.count;
+        
         // Trigger enriched nutrition data for edible species
         if (p.isEdible) {
           const tags = p.visualFeatures?.map(f => f.reason) || [];
           const nutrition = await aiNutritionLookup.fetchNutrition(p.commonName, p.scientificName, tags);
           if (nutrition) {
             p.nutrients = nutrition.nutrients;
+            p.botanicalData = nutrition.botanicalData || {};
             p.healthHints = nutrition.healthHints;
           }
         }
         
+        // Save to history and update verification cache
         plantDexService.saveToHistory({
           name: p.commonName || p.scientificName,
           date: new Date().toLocaleDateString(),
           image: `data:image/jpeg;base64,${base64Image}`,
-          isEdible: p.isEdible
+          isEdible: p.isEdible,
+          confidence: p.confidenceScore || 0
         });
+        
+        // Update verification cache for high-confidence identifications
+        if (p.confidenceScore >= 85) {
+          plantDexService.updateVerificationCache(p.scientificName, p.commonName, p.confidenceScore);
+        }
       }
       return data;
     } catch (e) {
@@ -84,6 +97,35 @@ export const plantDexService = {
       return { error: "Botanical identification failed. Please check your image clarity." };
     }
   },
+
+  checkVerificationStatus: (scientificName, commonName) => {
+    const cache = plantDexService.getVerificationCache();
+    const key = (scientificName || commonName || "").toLowerCase();
+    const entry = cache[key];
+    
+    return {
+      isVerified: entry && entry.count >= 3 && entry.avgConfidence >= 85,
+      count: entry?.count || 0,
+      avgConfidence: entry?.avgConfidence || 0
+    };
+  },
+
+  updateVerificationCache: (scientificName, commonName, confidence) => {
+    const cache = plantDexService.getVerificationCache();
+    const key = (scientificName || commonName || "").toLowerCase();
+    
+    if (!cache[key]) {
+      cache[key] = { count: 0, totalConfidence: 0, avgConfidence: 0 };
+    }
+    
+    cache[key].count += 1;
+    cache[key].totalConfidence += confidence;
+    cache[key].avgConfidence = Math.round(cache[key].totalConfidence / cache[key].count);
+    
+    localStorage.setItem('plantdex_verification_v1', JSON.stringify(cache));
+  },
+
+  getVerificationCache: () => JSON.parse(localStorage.getItem('plantdex_verification_v1') || '{}'),
 
   findSpecificRecipes: async (query) => {
     return await videoRecommendationService.getRecommendedVideos(query, 'recipes');

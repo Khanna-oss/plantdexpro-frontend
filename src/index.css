@@ -1,10 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Montserrat:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --soil-deep: #261a10;
-  --soil-medium: #3d2b1f;
+  --rope-brown: #925B1B;
+  --dark-burgundy: #7B0513;
+  --golden-soil: #c79016;
+  --olive-green: #556b2f;
+  --clay-brown: #883712;
+  --earthy-blue: #3e6688;
+  --soil-deep: #160d09;
+  --soil-medium: #2f1a12;
   --soil-light: #4B3621;
   --clay: #8b5a2b;
   --sand: #E3D5B8;
@@ -14,16 +21,75 @@
   --status-red: #c62828;
   --content-red: #6B0000;
   --forest-green: #1D3B23;
+  --glass-bg: rgba(255, 248, 239, 0.12);
+  --glass-border: rgba(255, 248, 239, 0.16);
+  --glass-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
 }
 
 body {
-  background-color: var(--soil-deep);
+  background-color: var(--soil-light);
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(199, 144, 22, 0.15), transparent 28%),
+    radial-gradient(circle at 82% 14%, rgba(62, 102, 136, 0.12), transparent 24%),
+    radial-gradient(circle at 48% 52%, rgba(136, 55, 18, 0.18), transparent 38%),
+    radial-gradient(circle at 76% 78%, rgba(123, 5, 19, 0.14), transparent 28%),
+    linear-gradient(135deg, #4B3621 0%, #2f1a12 35%, #160d09 100%);
   color: var(--cream);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Public Sans', 'Montserrat', sans-serif;
   overflow-x: hidden;
+  position: relative;
 }
 
-/* SAVE OUR SOIL Research Watermark - Broad Black Outline */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+body::before {
+  opacity: 0.16;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255,255,255,0.08) 0 1px, transparent 1px),
+    radial-gradient(circle at 80% 30%, rgba(0,0,0,0.18) 0 1px, transparent 1px),
+    radial-gradient(circle at 40% 70%, rgba(255,255,255,0.05) 0 1px, transparent 1px);
+  background-size: 22px 22px, 30px 30px, 26px 26px;
+  mix-blend-mode: soft-light;
+}
+
+body::after {
+  background:
+    radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.12) 54%, rgba(0, 0, 0, 0.48) 100%);
+}
+
+body,
+button,
+input,
+textarea,
+select {
+  font-family: 'Public Sans', 'Montserrat', sans-serif;
+}
+
+h1,
+h2,
+h3,
+.font-heading {
+  font-family: 'Daniel', 'Caveat', cursive;
+}
+
+#root {
+  position: relative;
+  isolation: isolate;
+}
+
+/* SAVE OUR SOIL Research Watermark - Enhanced Visibility */
 .save-soil-watermark {
   position: fixed;
   font-size: 15vw;
@@ -33,11 +99,11 @@ body {
   z-index: 0;
   white-space: nowrap;
   text-transform: uppercase;
-  /* Requested broad black outline */
-  -webkit-text-stroke: 4px #000000;
-  opacity: 0.3;
+  /* Enhanced broad black outline with better contrast */
+  -webkit-text-stroke: 5px rgba(0, 0, 0, 0.85);
+  opacity: 0.45;
   user-select: none;
-  filter: drop-shadow(0 0 15px rgba(0,0,0,0.4));
+  filter: drop-shadow(0 0 20px rgba(0,0,0,0.6)) drop-shadow(0 0 8px rgba(199, 144, 22, 0.3));
 }
 
 .parrot-green-card {
@@ -75,4 +141,72 @@ body {
 
 .animate-pulse-soft {
   animation: pulse-soft 2s infinite ease-in-out;
+}
+
+.glass-panel,
+.glass-card,
+.glass-button,
+.bento-tile {
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 248, 239, 0.16) 0%, rgba(255, 248, 239, 0.08) 100%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.glass-button {
+  background: linear-gradient(135deg, rgba(146, 91, 27, 0.92), rgba(123, 5, 19, 0.88));
+  color: var(--cream);
+}
+
+.glass-button:disabled {
+  background: rgba(255, 248, 239, 0.16);
+  color: rgba(245, 245, 220, 0.55);
+  box-shadow: none;
+}
+
+.soil-shell {
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(33, 18, 13, 0.78), rgba(19, 10, 8, 0.66));
+  border: 1px solid rgba(255, 248, 239, 0.1);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.36);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.bento-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.metric-bar-track {
+  border-radius: 999px;
+  background: rgba(255, 248, 239, 0.1);
+  border: 1px solid rgba(255, 248, 239, 0.08);
+  overflow: hidden;
+}
+
+.metric-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--earthy-blue) 0%, var(--olive-green) 35%, var(--golden-soil) 68%, var(--dark-burgundy) 100%);
+}
+
+.texture-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 24% 30%, rgba(255,255,255,0.08) 0 1px, transparent 1px),
+    radial-gradient(circle at 68% 58%, rgba(0,0,0,0.22) 0 1px, transparent 1px),
+    linear-gradient(140deg, rgba(136, 55, 18, 0.2), rgba(18, 10, 8, 0.12));
+  background-size: 18px 18px, 24px 24px, 100% 100%;
+  mix-blend-mode: soft-light;
+  opacity: 0.4;
+}
+
+.text-body-muted {
+  color: rgba(245, 245, 220, 0.72);
 }

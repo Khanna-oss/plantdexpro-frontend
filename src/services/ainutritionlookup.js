@@ -40,6 +40,14 @@ export const aiNutritionLookup = {
           },
           required: ["vitamins", "minerals", "proteins", "calories"]
         },
+        botanicalData: {
+          type: Type.OBJECT,
+          properties: {
+            edibleParts: { type: Type.STRING },
+            usage: { type: Type.STRING },
+            cautions: { type: Type.STRING }
+          }
+        },
         healthHints: {
           type: Type.ARRAY,
           items: {
@@ -79,6 +87,7 @@ export const aiNutritionLookup = {
 
       const dataToCache = {
         nutrients: result.nutrients,
+        botanicalData: result.botanicalData || {},
         healthHints: result.healthHints || [],
         isVerified: false,
         source: "AI Research Inference"
