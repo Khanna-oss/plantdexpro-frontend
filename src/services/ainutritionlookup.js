@@ -9,7 +9,7 @@ export const aiNutritionLookup = {
     const API_KEY = process.env.API_KEY;
     
     // 1. ETL PRIMARY CHECK (Authoritative Data Warehouse)
-    const etlResult = etlNutritionService.lookup(scientificName || plantName);
+    const etlResult = etlNutritionService.lookup(scientificName, plantName);
     if (etlResult) return etlResult;
 
     if (!API_KEY) return null;

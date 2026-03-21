@@ -94,16 +94,16 @@ const App = () => {
       <Header theme={theme} toggleTheme={toggleTheme} />
       
       <main className="flex-grow w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 relative z-10">
-        <div className="max-w-4xl mx-auto text-center mb-16">
+        <div className="max-w-3xl mx-auto text-center mb-14">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center justify-center gap-3 mb-6"
+            className="flex items-center justify-center gap-3 mb-5"
           >
-            <div className="w-12 h-12 glass-panel flex items-center justify-center text-[var(--cream)] shadow-xl">
-              <Leaf size={28} />
+            <div className="w-11 h-11 rounded-2xl bg-[var(--golden-soil)]/15 border border-[var(--golden-soil)]/25 flex items-center justify-center">
+              <Leaf size={24} className="text-[var(--golden-soil)]" />
             </div>
-            <h1 className="font-heading text-5xl md:text-7xl text-[var(--cream)] tracking-tight leading-none drop-shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
+            <h1 className="font-heading text-5xl md:text-6xl text-[var(--cream)] tracking-tight leading-none">
               PlantDexPro
             </h1>
           </motion.div>
@@ -111,9 +111,17 @@ const App = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-lg md:text-2xl text-body-muted font-medium max-w-2xl mx-auto"
+            className="text-base md:text-xl text-body-muted font-medium max-w-xl mx-auto leading-relaxed"
           >
-            Identify plants instantly. Unlock botanical insights, safety records, and habitat data with AI.
+            Identify plants instantly. Unlock botanical insights, safety records, and habitat data with AI-powered research tools.
+          </motion.p>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="text-[9px] font-black uppercase tracking-[0.35em] text-[var(--golden-soil)]/60 mt-4"
+          >
+            Save Soil Initiative &bull; MCA Research Project
           </motion.p>
         </div>
 
@@ -153,10 +161,10 @@ const App = () => {
 
         {!isLoading && results.length === 0 && history.length > 0 && (
           <div className="max-w-5xl mx-auto mt-24">
-            <div className="flex items-center gap-3 mb-8 text-[var(--golden-soil)] uppercase text-[10px] font-black tracking-[0.4em]">
-               <History size={16} /> Recent Discoveries
+            <div className="flex items-center gap-3 mb-6 text-[var(--golden-soil)]/80 uppercase text-[9px] font-black tracking-[0.35em]">
+               <History size={14} /> Recent Discoveries
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                {history.map((item, i) => (
                   <motion.div 
                     key={i}

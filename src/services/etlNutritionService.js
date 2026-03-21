@@ -175,13 +175,19 @@ const DATA_WAREHOUSE = transformData(RAW_RESEARCH_DATA);
 export const etlNutritionService = {
   /**
    * Queries the Data Warehouse using scientific or common name matching.
+   * Tries multiple name variants for broader coverage.
    */
-  lookup: (scientificName) => {
-    if (!scientificName) return null;
-    const key = scientificName.toLowerCase();
-    
-    // Exact or partial match logic
-    const foundKey = Object.keys(DATA_WAREHOUSE).find(k => key.includes(k) || k.includes(key));
-    return DATA_WAREHOUSE[foundKey] || null;
+  lookup: (scientificName, commonName) => {
+    const keys = DATA_WAREHOUSE ? Object.keys(DATA_WAREHOUSE) : [];
+    if (keys.length === 0) return null;
+
+    const tryMatch = (input) => {
+      if (!input) return null;
+      const q = input.toLowerCase().trim();
+      const found = keys.find(k => q.includes(k) || k.includes(q));
+      return found ? DATA_WAREHOUSE[found] : null;
+    };
+
+    return tryMatch(scientificName) || tryMatch(commonName) || null;
   }
 };

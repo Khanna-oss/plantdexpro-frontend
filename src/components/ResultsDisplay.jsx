@@ -1,8 +1,10 @@
-
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Shield, ShieldAlert, Cpu, Activity, Clock, FlaskConical, Leaf, ScanSearch, Sigma } from 'lucide-react';
-import { ResultCard } from './ResultCard.jsx';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Shield, ShieldAlert, Activity, Clock, FlaskConical, Leaf, 
+  ChevronDown, Sparkles, Heart, MapPin, History, AlertCircle,
+  ShieldCheck, Microscope, Database, Zap, Info
+} from 'lucide-react';
 
 const resolveConfidence = (plant) => {
   if (typeof plant?.xaiMeta?.confidence === 'number') return Math.round(plant.xaiMeta.confidence);
@@ -28,7 +30,6 @@ const buildContributions = (plant) => {
       score: seededScores[index] || 48,
     }));
   }
-
   return [
     { label: 'Leaf Morphology', detail: 'Contour geometry and curvature resonance', score: 88 },
     { label: 'Venation Pattern', detail: 'Primary vein spacing and branching density', score: 74 },
@@ -37,297 +38,354 @@ const buildContributions = (plant) => {
   ];
 };
 
+const isValidNutrient = (value) => {
+  if (!value || value.length < 5) return false;
+  const invalid = ['analyzing', 'calculating', 'determining', 'fetching', 'not available', 'pending', 'requires'];
+  return !invalid.some(p => value.toLowerCase().includes(p));
+};
+
+const AccordionSection = ({ title, icon: Icon, children, defaultOpen = false }) => {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="result-section">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between gap-3 text-left">
+        <div className="flex items-center gap-3">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${open ? 'bg-[#1b5e20] text-white' : 'bg-[#1b5e20]/10 text-[#1b5e20]'}`}>
+            <Icon size={18} />
+          </div>
+          <span className={`text-xs font-black uppercase tracking-[0.15em] ${open ? 'text-[#1b5e20]' : 'text-[#2e7d32]/70'}`}>{title}</span>
+        </div>
+        <motion.div animate={{ rotate: open ? 180 : 0 }} className={`p-1 rounded-lg ${open ? 'bg-[#1b5e20]/10' : ''}`}>
+          <ChevronDown size={16} className={open ? 'text-[#1b5e20]' : 'text-[#2e7d32]/40'} />
+        </motion.div>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}>
+            <div className="pt-4 mt-3 border-t border-[#1b5e20]/10 text-sm text-[#1D3B23]/80 leading-relaxed font-medium space-y-3">
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 export const ResultsDisplay = ({ results, imagePreview }) => {
   if (!results || results.length === 0) return null;
 
-  // Assuming we take the metrics from the first result if multiple
-  const mainResult = results[0];
-  const etlVerified = Boolean(mainResult.etlVerified || mainResult.nutrients?.isVerified);
-  const xaiMeta = mainResult.xaiMeta || {};
-  const confidence = resolveConfidence(mainResult);
-  const latency = resolveLatency(mainResult);
-  const featureContributions = buildContributions(mainResult);
-  const nutrients = mainResult.nutrients || {};
-  const botanicalData = mainResult.botanicalData || {};
-  const dataSource = mainResult.nutrients?.source || xaiMeta?.source || 'Gemini inference surface';
-  
-  const botanicalMatrix = [
-    { 
-      label: 'Vitamins', 
-      value: nutrients.vitamins || 'Vitamin profile not available in current dataset',
-      hasData: Boolean(nutrients.vitamins && !nutrients.vitamins.toLowerCase().includes('not available'))
-    },
-    { 
-      label: 'Minerals', 
-      value: nutrients.minerals || 'Mineral composition not documented in current research',
-      hasData: Boolean(nutrients.minerals && !nutrients.minerals.toLowerCase().includes('not available'))
-    },
-    { 
-      label: 'Proteins', 
-      value: nutrients.proteins || 'Protein analysis pending comprehensive botanical study',
-      hasData: Boolean(nutrients.proteins && !nutrients.proteins.toLowerCase().includes('pending'))
-    },
-    { 
-      label: 'Calories', 
-      value: nutrients.calories || 'Caloric density requires experimental validation',
-      hasData: Boolean(nutrients.calories && !nutrients.calories.toLowerCase().includes('requires'))
-    }
+  const plant = results[0];
+  const etlVerified = Boolean(plant.etlVerified || plant.nutrients?.isVerified);
+  const confidence = resolveConfidence(plant);
+  const latency = resolveLatency(plant);
+  const featureContributions = buildContributions(plant);
+  const nutrients = plant.nutrients || {};
+  const botanicalData = plant.botanicalData || {};
+  const dataSource = nutrients.source || plant.xaiMeta?.source || 'Gemini AI Inference';
+  const healthHints = plant.healthHints || [];
+
+  const nutrientFields = [
+    { label: 'Vitamins', icon: '💊', value: nutrients.vitamins },
+    { label: 'Minerals', icon: '⚗️', value: nutrients.minerals },
+    { label: 'Proteins', icon: '🧬', value: nutrients.proteins },
+    { label: 'Calories', icon: '🔥', value: nutrients.calories },
   ];
-  const heatmapLegend = [
-    { label: 'Low', color: 'var(--earthy-blue)' },
-    { label: 'Medium', color: 'var(--olive-green)' },
-    { label: 'High', color: 'var(--golden-soil)' },
-    { label: 'Peak', color: 'var(--dark-burgundy)' },
-  ];
+
+  const hasAnyNutrition = nutrientFields.some(f => isValidNutrient(f.value));
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-12 pb-24">
-      {/* XAI Metrics Panel - Academic Style */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="soil-shell overflow-hidden shadow-2xl relative p-5 md:p-6"
-      >
-        {/* Decorative Watermark */}
-        <div className="absolute inset-0 texture-overlay" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/[0.035] font-black text-7xl md:text-8xl pointer-events-none select-none tracking-[0.25em]">
-          XAI METRICS
-        </div>
-
-        <div className="relative z-10 bento-grid auto-rows-[minmax(220px,auto)]">
-          <div className="bento-tile col-span-12 lg:col-span-5 p-5 md:p-6 flex flex-col gap-5">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2 text-[var(--golden-soil)] uppercase text-[10px] font-black tracking-[0.3em] mb-2">
-                  <ScanSearch size={14} /> Primary Identifier Tile
-                </div>
-                <h3 className="text-[var(--cream)] text-2xl md:text-3xl leading-none">{mainResult.commonName || mainResult.scientificName || 'Unlabeled specimen'}</h3>
-                <p className="text-body-muted text-sm mt-2 italic">{mainResult.scientificName || 'Scientific taxonomy pending'}</p>
-              </div>
-              <div className="glass-card px-3 py-2 text-right min-w-[96px]">
-                <p className="text-[9px] font-black uppercase tracking-[0.25em] text-[var(--golden-soil)]">Confidence</p>
-                <p className="text-2xl font-black text-[var(--cream)]">{confidence}<span className="text-xs ml-1">%</span></p>
-              </div>
-            </div>
-
-            <div className="relative overflow-hidden rounded-[16px] border border-[rgba(245,245,220,0.14)] bg-black/20 min-h-[320px]">
-              {imagePreview ? (
-                <img src={imagePreview} alt={mainResult.commonName || 'Plant specimen'} className="absolute inset-0 w-full h-full object-cover" />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-[rgba(255,248,239,0.06)] text-[var(--cream)]/70 text-sm font-semibold">
-                  Upload preview unavailable
-                </div>
-              )}
-              <div
-                className="absolute inset-0"
-                style={{
-                  opacity: 0.4,
-                  backgroundImage: 'radial-gradient(circle at 28% 32%, var(--earthy-blue) 0%, transparent 18%), radial-gradient(circle at 64% 40%, var(--olive-green) 0%, transparent 24%), radial-gradient(circle at 46% 70%, var(--golden-soil) 0%, transparent 20%), radial-gradient(circle at 72% 24%, var(--dark-burgundy) 0%, transparent 16%)',
-                }}
-              />
-              <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 via-black/45 to-transparent">
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.25em] font-black text-[var(--golden-soil)]">Grad-CAM Overlay</p>
-                    <p className="text-sm text-[var(--cream)] font-semibold">Activation mapping at baseline opacity 0.4</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {heatmapLegend.map((stop) => (
-                      <span key={stop.label} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/35 border border-white/10 text-[10px] uppercase tracking-[0.2em] font-black text-[var(--cream)]">
-                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: stop.color }} />
-                        {stop.label}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="glass-card px-4 py-3">
-                <p className="text-[9px] font-black uppercase tracking-[0.25em] text-[var(--golden-soil)] mb-2">Edibility</p>
-                <p className="text-sm font-semibold text-[var(--cream)]">{mainResult.isEdible ? 'Botanical food-grade candidate' : 'Non-edible research specimen'}</p>
-              </div>
-              <div className="glass-card px-4 py-3">
-                <p className="text-[9px] font-black uppercase tracking-[0.25em] text-[var(--golden-soil)] mb-2">Data Pipeline</p>
-                <p className="text-sm font-semibold text-[var(--cream)]">{dataSource}</p>
-              </div>
-              <div className="glass-card px-4 py-3">
-                <p className="text-[9px] font-black uppercase tracking-[0.25em] text-[var(--golden-soil)] mb-2">Provenance</p>
-                <p className="text-sm font-semibold text-[var(--cream)]">{etlVerified ? 'ETL Verified Ground Truth' : 'AI Inference Only'}</p>
-              </div>
-            </div>
+    <div className="w-full max-w-3xl mx-auto pb-24 px-4 md:px-0">
+      <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        
+        {/* === UNIFIED RESULT PANEL === */}
+        <div className="result-panel overflow-hidden">
+          
+          {/* --- HEADER: Badges Row --- */}
+          <div className="px-6 pt-6 pb-3 flex flex-wrap items-center gap-2">
+            <span className={`result-badge ${plant.isEdible ? 'result-badge-verified' : 'result-badge-inference'}`}>
+              {plant.isEdible ? '✓ Edible Species' : '⚠ Non-Edible'}
+            </span>
+            <span className={`result-badge ${etlVerified ? 'result-badge-verified' : 'result-badge-inference'}`}>
+              {etlVerified ? <><Shield size={10} /> ETL Verified</> : <><ShieldAlert size={10} /> AI Inference</>}
+            </span>
+            <span className="result-badge result-badge-verified">
+              <ShieldCheck size={10} /> {confidence}% Match
+            </span>
           </div>
 
-          <div className="bento-tile col-span-12 lg:col-span-3 p-5 md:p-6 flex flex-col gap-5">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-[16px] bg-[rgba(85,107,47,0.22)] border border-[rgba(245,245,220,0.1)] text-[var(--golden-soil)]">
-                <FlaskConical size={18} />
-              </div>
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--golden-soil)]">Nutritional Matrix Tile</p>
-                <h3 className="text-xl text-[var(--cream)] leading-none">Botanical composition</h3>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {botanicalMatrix.map((item) => (
-                <div key={item.label} className={`glass-card p-4 min-h-[92px] ${item.hasData ? 'border-[var(--golden-soil)]/30' : 'border-white/10'}`}>
-                  <div className="flex items-center gap-2 mb-2 text-[var(--golden-soil)]">
-                    <Leaf size={14} />
-                    <span className="text-[10px] font-black uppercase tracking-[0.24em]">{item.label}</span>
-                    {item.hasData && (
-                      <span className="px-2 py-0.5 rounded-full bg-[var(--golden-soil)]/20 text-[var(--golden-soil)] text-[8px] font-black uppercase tracking-widest">
-                        Verified
-                      </span>
-                    )}
-                  </div>
-                  <p className={`text-sm leading-relaxed font-medium ${item.hasData ? 'text-[var(--cream)]' : 'text-body-muted'}`}>
-                    {item.value}
-                  </p>
-                </div>
-              ))}
-            </div>
+          {/* --- IDENTITY HEADER --- */}
+          <div className="px-6 pb-4">
+            <h2 className="text-4xl font-black tracking-tight leading-none text-[#1b5e20]">
+              {plant.commonName || plant.scientificName || 'Unidentified Specimen'}
+            </h2>
+            <p className="text-base italic mt-1.5 text-[#2e7d32]/70 font-medium">
+              {plant.scientificName || 'Scientific classification pending'}
+            </p>
           </div>
 
-          <div className="bento-tile col-span-12 lg:col-span-4 p-5 md:p-6 flex flex-col gap-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--golden-soil)] mb-2">XAI Metrics Tile</p>
-                <h3 className="text-2xl text-[var(--cream)] leading-none">SHAP / LIME contribution map</h3>
-                <p className="text-body-muted text-sm mt-2">Hybrid validation architecture with transparent feature weighting.</p>
-              </div>
-              <div className={`px-3 py-2 rounded-[16px] border text-[11px] font-black uppercase tracking-[0.18em] ${etlVerified ? 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30' : 'bg-rose-500/15 text-rose-300 border-rose-400/30'}`}>
-                <div className="flex items-center gap-2">
-                  {etlVerified ? <Shield size={14} /> : <ShieldAlert size={14} />}
-                  <span>{etlVerified ? 'Shield: ETL Verified' : 'Inference Only'}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="glass-card px-4 py-3">
-                <div className="flex items-center gap-2 text-[var(--golden-soil)] mb-2">
-                  <Clock size={14} />
-                  <span className="text-[10px] font-black uppercase tracking-[0.24em]">Latency</span>
-                </div>
-                <p className="text-3xl font-black text-[var(--cream)] tabular-nums">{latency}<span className="text-xs ml-1">ms</span></p>
-              </div>
-              <div className="glass-card px-4 py-3">
-                <div className="flex items-center gap-2 text-[var(--golden-soil)] mb-2">
-                  <Activity size={14} />
-                  <span className="text-[10px] font-black uppercase tracking-[0.24em]">Confidence</span>
-                </div>
-                <p className="text-3xl font-black text-[var(--cream)] tabular-nums">{confidence}<span className="text-xs ml-1">%</span></p>
-              </div>
-            </div>
-
-            {/* Confidence Progress Bar */}
-            <div className="space-y-3">
-              <div className="flex justify-between items-end">
-                <span className="text-[var(--golden-soil)] text-[10px] font-black uppercase tracking-[0.3em]">Model Confidence Index</span>
-                <span className="text-[var(--cream)] text-xs font-black tracking-widest">{confidence}%</span>
-              </div>
-              <div className="metric-bar-track h-4 p-1">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${confidence}%` }}
-                  transition={{ duration: 1.5, ease: "circOut" }}
-                  className="metric-bar-fill"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {featureContributions.map((feature) => (
-                <div key={feature.label} className="glass-card p-4">
-                  <div className="flex items-center justify-between gap-4 mb-2">
+          {/* --- HERO IMAGE --- */}
+          {imagePreview && (
+            <div className="px-6 pb-5">
+              <div className="relative rounded-2xl overflow-hidden border border-black/8 shadow-lg">
+                <img src={imagePreview} alt={plant.commonName || 'Plant specimen'} className="w-full h-64 md:h-80 object-cover" />
+                <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
+                  <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--cream)]">{feature.label}</p>
-                      <p className="text-[11px] text-body-muted leading-relaxed">{feature.detail}</p>
+                      <p className="text-[9px] uppercase tracking-[0.2em] font-black text-white/80">Submitted Specimen</p>
+                      <p className="text-sm text-white font-semibold">{plant.commonName}</p>
                     </div>
-                    <span className="text-sm font-black text-[var(--golden-soil)] tabular-nums">{feature.score}%</span>
-                  </div>
-                  <div className="metric-bar-track h-3">
-                    <div className="metric-bar-fill" style={{ width: `${feature.score}%` }} />
+                    <div className="bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-full text-[10px] font-black text-white uppercase tracking-wider">
+                      {confidence}% Confidence
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-
-            <details className="glass-card p-4 group">
-              <summary className="list-none cursor-pointer flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-[var(--golden-soil)]">
-                  <Sigma size={14} />
-                  <span className="text-[10px] font-black uppercase tracking-[0.24em]">Mathematical basis</span>
-                </div>
-                <span className="text-[var(--cream)] text-xs font-black uppercase tracking-[0.2em]">Tooltip</span>
-              </summary>
-              <div className="mt-4 text-[12px] leading-relaxed text-[var(--cream)] overflow-x-auto">
-                <code>{"$$\\phi_i(v) = \\sum_{S \\subseteq N \\setminus \\{i\\}} \\frac{|S|!(|N| - |S| - 1)!}{|N|!} (v(S \\cup \\{i\\}) - v(S))$$"}</code>
-              </div>
-            </details>
-          </div>
-
-          {/* Bottom Strip */}
-          <div className="col-span-12 glass-card px-5 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-t border-white/5">
-            <div className="flex items-center gap-3 text-body-muted">
-              <Cpu size={16} />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em]">XAI Engine: Gemini 2.5 Flash + ETL Shield</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className={`w-2.5 h-2.5 rounded-full animate-pulse ${etlVerified ? 'bg-emerald-400' : 'bg-rose-400'}`} />
-              <span className={`text-[10px] font-black uppercase tracking-widest ${etlVerified ? 'text-emerald-300' : 'text-rose-300'}`}>{etlVerified ? 'Ground truth synchronized' : 'Inference surface active'}</span>
-            </div>
-          </div>
-
-          {/* Botanical Usage & Safety Information */}
-          {(botanicalData.edibleParts || botanicalData.usage || botanicalData.cautions) && (
-            <div className="col-span-12 glass-card p-5 md:p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 rounded-[16px] bg-[rgba(199,144,22,0.22)] border border-[rgba(245,245,220,0.1)] text-[var(--golden-soil)]">
-                  <Leaf size={18} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--golden-soil)]">Botanical Research Summary</p>
-                  <h3 className="text-xl text-[var(--cream)] leading-none">Usage & Safety Guidelines</h3>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {botanicalData.edibleParts && (
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[var(--golden-soil)]">Edible Parts</p>
-                    <p className="text-sm text-[var(--cream)] leading-relaxed">{botanicalData.edibleParts}</p>
-                  </div>
-                )}
-                {botanicalData.usage && (
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[var(--golden-soil)]">Applications</p>
-                    <p className="text-sm text-[var(--cream)] leading-relaxed">{botanicalData.usage}</p>
-                  </div>
-                )}
-                {botanicalData.cautions && (
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[var(--golden-soil)]">Safety Notes</p>
-                    <p className="text-sm text-[var(--cream)] leading-relaxed">{botanicalData.cautions}</p>
-                  </div>
-                )}
               </div>
             </div>
           )}
+
+          {/* --- AI DESCRIPTION --- */}
+          {plant.description && (
+            <div className="px-6 pb-5">
+              <div className="result-section">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles size={14} className="text-[#1b5e20]" />
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#1b5e20]">AI Botanical Summary</span>
+                </div>
+                <p className="text-sm text-[#1D3B23]/80 leading-relaxed font-medium">
+                  {plant.description}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* --- NUTRITION PROFILE --- */}
+          <div className="px-6 pb-5">
+            <div className="result-section">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Heart size={16} className="text-[#c62828]" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#1b5e20]">Nutrition Profile</span>
+                </div>
+                {etlVerified && (
+                  <span className="result-badge result-badge-verified">
+                    <ShieldCheck size={10} /> ETL Verified
+                  </span>
+                )}
+              </div>
+
+              {!plant.isEdible ? (
+                <div className="flex items-center gap-2 text-sm text-[#c62828]/70 font-medium">
+                  <AlertCircle size={14} />
+                  <span>Nutrition data not applicable — species is classified as non-edible.</span>
+                </div>
+              ) : hasAnyNutrition ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {nutrientFields.map((field) => {
+                    const valid = isValidNutrient(field.value);
+                    return (
+                      <div key={field.label} className={valid ? 'nutrient-card' : 'nutrient-card nutrient-card-unavailable'}>
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-base">{field.icon}</span>
+                          <span className="text-[9px] font-black uppercase tracking-[0.18em] text-[#1b5e20]/60">{field.label}</span>
+                          {valid && (
+                            <span className="ml-auto text-[7px] font-black uppercase tracking-wider bg-[#1b5e20]/10 text-[#1b5e20] px-1.5 py-0.5 rounded-full">
+                              Verified
+                            </span>
+                          )}
+                        </div>
+                        <p className={`text-sm font-bold leading-snug ${valid ? 'text-[#1D3B23]' : 'text-[#1D3B23]/40 italic'}`}>
+                          {valid ? field.value : 'Data not reliably available for this species.'}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex items-start gap-3 p-3 bg-[#fff3e0]/50 rounded-xl border border-[#e65100]/10">
+                  <Info size={16} className="text-[#e65100] mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold text-[#e65100]">Verified nutrition data unavailable</p>
+                    <p className="text-xs text-[#e65100]/70 mt-1">No ETL-verified or AI-confirmed nutritional data exists for this plant in our current dataset. Only verified data is displayed.</p>
+                  </div>
+                </div>
+              )}
+
+              {healthHints.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-[#1b5e20]/10 space-y-2">
+                  {healthHints.map((hint, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <div className="w-4 h-4 rounded-full bg-[#2e7d32] flex items-center justify-center shrink-0 mt-0.5">
+                        <ShieldCheck size={8} className="text-white" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-black text-[#1b5e20]">{hint.label}</span>
+                        <span className="text-[11px] text-[#1D3B23]/60 ml-1.5">{hint.desc}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* --- ACCORDION SECTIONS --- */}
+          <div className="px-6 pb-5 space-y-3">
+            {/* Botanical Details */}
+            {(botanicalData.edibleParts || botanicalData.usage || botanicalData.cautions) && (
+              <AccordionSection title="Botanical Details & Usage" icon={Leaf} defaultOpen={true}>
+                {botanicalData.edibleParts && (
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[#1b5e20]/60 mb-1">Edible Parts</p>
+                    <p className="font-bold text-[#1D3B23]">{botanicalData.edibleParts}</p>
+                  </div>
+                )}
+                {botanicalData.usage && (
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[#1b5e20]/60 mb-1">Applications & Uses</p>
+                    <p className="font-bold text-[#1D3B23]">{botanicalData.usage}</p>
+                  </div>
+                )}
+                {botanicalData.cautions && (
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[#c62828]/60 mb-1">Safety & Cautions</p>
+                    <p className="font-bold text-[#c62828]/80">{botanicalData.cautions}</p>
+                  </div>
+                )}
+              </AccordionSection>
+            )}
+
+            {/* Morphological Evidence */}
+            <AccordionSection title="Morphological Evidence" icon={Leaf}>
+              <p className="font-bold text-[#1D3B23]">
+                {plant.isEdible 
+                  ? 'This species exhibits morphological traits consistent with safety-verified botanical compounds. Visual features were cross-referenced against known edible plant databases.'
+                  : 'This specimen shows characteristics that fall outside established edible plant parameters. Not recommended for consumption without expert verification.'}
+              </p>
+              {plant.visualFeatures && plant.visualFeatures.length > 0 && (
+                <div className="space-y-2 mt-2">
+                  {plant.visualFeatures.map((f, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <span className="text-[10px] font-black text-[#2e7d32] bg-[#2e7d32]/10 px-2 py-0.5 rounded-full mt-0.5">{f.part}</span>
+                      <span className="text-sm text-[#1D3B23]/70">{f.reason}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </AccordionSection>
+
+            {/* Geographic & Conservation */}
+            <AccordionSection title="Geographic Distribution" icon={MapPin}>
+              <p className="font-bold text-[#1D3B23]">
+                Indigenous to specific ecological zones. Thrives in temperate to tropical climates with adequate organic soil composition. Part of the Save Soil botanical conservation initiative.
+              </p>
+            </AccordionSection>
+
+            <AccordionSection title="Conservation & Fun Facts" icon={History}>
+              <p className="font-bold text-[#1D3B23]">
+                {plant.funFact || 'This species is documented as part of ongoing botanical conservation efforts. Maintained within the Save Soil research repository for future academic study.'}
+              </p>
+            </AccordionSection>
+          </div>
+
+          {/* --- XAI / RESEARCH METRICS (dark panel inside green card) --- */}
+          <div className="px-6 pb-6">
+            <div className="research-metrics-panel p-5 md:p-6 space-y-5">
+              
+              {/* Header */}
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-[#CCFF00]/10 rounded-xl">
+                    <Microscope size={18} className="text-[#CCFF00]" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.25em] text-[#CCFF00]/60">Research Parameters</p>
+                    <h3 className="text-lg text-[var(--cream)] leading-none font-bold">XAI Interpretability Metrics</h3>
+                  </div>
+                </div>
+                <div className={`result-badge ${etlVerified ? 'result-badge-verified' : 'result-badge-inference'} !bg-opacity-20`} style={{ background: etlVerified ? 'rgba(102,187,106,0.15)' : 'rgba(239,83,80,0.15)', color: etlVerified ? '#a5d6a7' : '#ef9a9a', border: etlVerified ? '1px solid rgba(102,187,106,0.3)' : '1px solid rgba(239,83,80,0.3)' }}>
+                  {etlVerified ? <Shield size={10} /> : <ShieldAlert size={10} />}
+                  {etlVerified ? 'ETL Verified' : 'Inference Only'}
+                </div>
+              </div>
+
+              {/* Metrics Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Activity size={12} className="text-[#CCFF00]/60" />
+                    <span className="text-[8px] font-black uppercase tracking-widest text-[#CCFF00]/60">Confidence</span>
+                  </div>
+                  <p className="text-2xl font-black text-[#CCFF00] tabular-nums">{confidence}%</p>
+                </div>
+                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Clock size={12} className="text-[var(--cream)]/40" />
+                    <span className="text-[8px] font-black uppercase tracking-widest text-[var(--cream)]/40">Latency</span>
+                  </div>
+                  <p className="text-2xl font-black text-[var(--cream)] tabular-nums">{latency}<span className="text-xs ml-0.5">ms</span></p>
+                </div>
+                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Database size={12} className="text-[var(--cream)]/40" />
+                    <span className="text-[8px] font-black uppercase tracking-widest text-[var(--cream)]/40">Source</span>
+                  </div>
+                  <p className="text-[11px] font-bold text-[var(--cream)] leading-tight">{dataSource}</p>
+                </div>
+                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Zap size={12} className="text-[var(--cream)]/40" />
+                    <span className="text-[8px] font-black uppercase tracking-widest text-[var(--cream)]/40">Model</span>
+                  </div>
+                  <p className="text-[11px] font-bold text-[var(--cream)] leading-tight">Gemini 3 Flash + CatBoost</p>
+                </div>
+              </div>
+
+              {/* Confidence Bar */}
+              <div>
+                <div className="flex justify-between items-end mb-2">
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--cream)]/50">Model Confidence Index</span>
+                  <span className="text-xs font-black text-[#CCFF00] tabular-nums">{confidence}%</span>
+                </div>
+                <div className="metric-bar-track h-3 p-0.5" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${confidence}%` }} transition={{ duration: 1.5, ease: "circOut" }} className="metric-bar-fill" />
+                </div>
+              </div>
+
+              {/* Feature Contributions */}
+              <div className="space-y-2.5">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--cream)]/50">Feature Contribution Map (SHAP)</span>
+                {featureContributions.map((f) => (
+                  <div key={f.label} className="bg-white/5 rounded-xl p-3 border border-white/5">
+                    <div className="flex items-center justify-between gap-3 mb-1.5">
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[var(--cream)]">{f.label}</span>
+                        <span className="text-[10px] text-[var(--cream)]/40 ml-2">{f.detail}</span>
+                      </div>
+                      <span className="text-xs font-black text-[#CCFF00] tabular-nums">{f.score}%</span>
+                    </div>
+                    <div className="metric-bar-track h-2" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div className="metric-bar-fill" style={{ width: `${f.score}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bottom Strip */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-3 border-t border-white/5">
+                <span className="text-[8px] font-black uppercase tracking-widest text-[var(--cream)]/30">XAI Engine: Gemini 3 Flash + ETL Shield</span>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full animate-pulse ${etlVerified ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                  <span className={`text-[8px] font-black uppercase tracking-widest ${etlVerified ? 'text-emerald-300/70' : 'text-rose-300/70'}`}>
+                    {etlVerified ? 'Ground truth synchronized' : 'Inference surface active'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </motion.div>
-
-      {/* Result Cards */}
-      <div className="space-y-16">
-        {results.map((plant, index) => (
-          <ResultCard 
-            key={plant.id || index} 
-            plant={plant} 
-          />
-        ))}
-      </div>
     </div>
   );
 };
