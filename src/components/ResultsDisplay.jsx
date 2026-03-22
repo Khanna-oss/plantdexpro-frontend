@@ -17,6 +17,7 @@ const resolveConfidence = (plant) => {
 };
 
 const resolveLatency = (plant) => {
+  if (typeof plant?.xaiMeta?.inferenceLatencyMs === 'number') return Math.round(plant.xaiMeta.inferenceLatencyMs);
   if (typeof plant?.modelLatencyMs === 'number') return Math.round(plant.modelLatencyMs);
   if (typeof plant?.xaiMeta?.latency === 'number') return Math.round(plant.xaiMeta.latency);
   return 1280;
@@ -462,31 +463,82 @@ export const ResultsDisplay = ({ results, imagePreview }) => {
                 </div>
               </div>
 
-              {/* Confidence Bar */}
+              {/* PHASE 4: Enhanced Confidence Visualization */}
               <div>
-                <div className="flex justify-between items-end mb-2">
-                  <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--cream)]/50">Model Confidence Index</span>
-                  <span className="text-xs font-black text-[#CCFF00] tabular-nums">{confidence}%</span>
+                <div className="flex justify-between items-end mb-3">
+                  <div>
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--cream)]/50">Model Confidence Level</span>
+                    <p className="text-[10px] text-[var(--cream)]/30 mt-0.5">
+                      {confidence >= 90 ? 'Very High Certainty' : confidence >= 75 ? 'High Certainty' : confidence >= 60 ? 'Moderate Certainty' : 'Low Certainty'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl font-black text-[#CCFF00] tabular-nums">{confidence}%</span>
+                    <p className="text-[8px] text-[var(--cream)]/30 uppercase tracking-wider">Match Score</p>
+                  </div>
                 </div>
-                <div className="metric-bar-track h-3 p-0.5" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <motion.div initial={{ width: 0 }} animate={{ width: `${confidence}%` }} transition={{ duration: 1.5, ease: "circOut" }} className="metric-bar-fill" />
+                <div className="metric-bar-track h-4 p-0.5 relative" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <motion.div 
+                    initial={{ width: 0 }} 
+                    animate={{ width: `${confidence}%` }} 
+                    transition={{ duration: 1.5, ease: "circOut" }} 
+                    className="metric-bar-fill h-full rounded-md"
+                    style={{
+                      background: confidence >= 90 
+                        ? 'linear-gradient(90deg, #66bb6a, #81c784)' 
+                        : confidence >= 75 
+                        ? 'linear-gradient(90deg, #CCFF00, #9ccc65)' 
+                        : confidence >= 60
+                        ? 'linear-gradient(90deg, #ffd54f, #ffb74d)'
+                        : 'linear-gradient(90deg, #ff8a65, #ef5350)'
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between mt-1.5 text-[8px] text-[var(--cream)]/20 uppercase tracking-wider">
+                  <span>0%</span>
+                  <span>50%</span>
+                  <span>100%</span>
                 </div>
               </div>
 
-              {/* Feature Contributions */}
-              <div className="space-y-2.5">
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--cream)]/50">Feature Contribution Map (SHAP)</span>
-                {featureContributions.map((f) => (
-                  <div key={f.label} className="bg-white/5 rounded-xl p-3 border border-white/5">
-                    <div className="flex items-center justify-between gap-3 mb-1.5">
-                      <div>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-[var(--cream)]">{f.label}</span>
-                        <span className="text-[10px] text-[var(--cream)]/40 ml-2">{f.detail}</span>
+              {/* PHASE 4: SHAP/LIME-Inspired Feature Importance */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--cream)]/50">Why This Identification?</span>
+                  <span className="text-[8px] text-[var(--cream)]/30 uppercase tracking-wider">SHAP/LIME Analysis</span>
+                </div>
+                <p className="text-[11px] text-[var(--cream)]/60 leading-relaxed">
+                  Identified based on {featureContributions.length} key morphological features. Each feature's contribution to the final classification is shown below.
+                </p>
+                {featureContributions.map((f, idx) => (
+                  <div key={f.label} className="bg-white/5 rounded-xl p-3 border border-white/5 hover:bg-white/8 transition-colors">
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[var(--cream)]">{f.label}</span>
+                          <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider" style={{
+                            background: idx === 0 ? 'rgba(204,255,0,0.15)' : 'rgba(255,255,255,0.08)',
+                            color: idx === 0 ? '#CCFF00' : 'rgba(245,245,220,0.5)'
+                          }}>
+                            {idx === 0 ? 'Primary' : `Rank ${idx + 1}`}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-[var(--cream)]/50 leading-relaxed">{f.detail}</span>
                       </div>
                       <span className="text-xs font-black text-[#CCFF00] tabular-nums">{f.score}%</span>
                     </div>
                     <div className="metric-bar-track h-2" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div className="metric-bar-fill" style={{ width: `${f.score}%` }} />
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${f.score}%` }}
+                        transition={{ duration: 1.2, delay: idx * 0.1, ease: "easeOut" }}
+                        className="metric-bar-fill h-full rounded-sm"
+                        style={{
+                          background: idx === 0 
+                            ? 'linear-gradient(90deg, #CCFF00, #9ccc65)' 
+                            : 'linear-gradient(90deg, rgba(204,255,0,0.6), rgba(156,204,101,0.4))'
+                        }}
+                      />
                     </div>
                   </div>
                 ))}

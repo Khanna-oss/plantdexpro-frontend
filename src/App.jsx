@@ -145,11 +145,44 @@ const App = () => {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="max-w-xl mx-auto text-center glass-panel text-rose-200 px-6 py-4 flex items-center justify-center gap-3" 
+            className="max-w-2xl mx-auto glass-panel border border-rose-400/20" 
             role="alert"
           >
-            <XCircle className="w-6 h-6 shrink-0" />
-            <span className="text-sm font-black uppercase tracking-widest">{error}</span>
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-rose-500/20 flex items-center justify-center flex-shrink-0">
+                <XCircle className="w-6 h-6 text-rose-300" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-black text-rose-200 mb-1">Identification Failed</h3>
+                <p className="text-sm text-rose-300/80">{error}</p>
+              </div>
+            </div>
+            
+            <div className="bg-[var(--golden-soil)]/10 rounded-xl p-4 border border-[var(--golden-soil)]/20">
+              <h4 className="text-xs font-black uppercase tracking-wider text-[var(--golden-soil)] mb-3">Tips for Better Results</h4>
+              <ul className="space-y-2 text-xs text-[var(--cream)]/70">
+                <li className="flex items-start gap-2">
+                  <span className="text-[var(--golden-soil)] mt-0.5">•</span>
+                  <span><strong className="text-[var(--cream)]">Good Lighting:</strong> Take photos in natural daylight, avoid shadows and harsh direct sunlight</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[var(--golden-soil)] mt-0.5">•</span>
+                  <span><strong className="text-[var(--cream)]">Clear Focus:</strong> Ensure the plant is in sharp focus, not blurry</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[var(--golden-soil)] mt-0.5">•</span>
+                  <span><strong className="text-[var(--cream)]">Full View:</strong> Capture the entire leaf or flower, centered in the frame</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[var(--golden-soil)] mt-0.5">•</span>
+                  <span><strong className="text-[var(--cream)]">Close-Up Details:</strong> Include visible veins, edges, and texture patterns</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[var(--golden-soil)] mt-0.5">•</span>
+                  <span><strong className="text-[var(--cream)]">Clean Background:</strong> Use a plain background to help the AI focus on the plant</span>
+                </li>
+              </ul>
+            </div>
           </motion.div>
         )}
 
