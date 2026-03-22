@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Shield, ShieldAlert, Activity, Clock, FlaskConical, Leaf, 
   ChevronDown, Sparkles, Heart, MapPin, History, AlertCircle,
-  ShieldCheck, Microscope, Database, Zap, Info
+  ShieldCheck, Microscope, Database, Zap, Info, ExternalLink, 
+  Play, Youtube
 } from 'lucide-react';
 
 const resolveConfidence = (plant) => {
@@ -301,7 +302,106 @@ export const ResultsDisplay = ({ results, imagePreview }) => {
                 {plant.funFact || 'This species is documented as part of ongoing botanical conservation efforts. Maintained within the Save Soil research repository for future academic study.'}
               </p>
             </AccordionSection>
+
+            {/* PHASE 3: Wikipedia Educational Summary */}
+            {plant.wikipediaEnrichment && (
+              <AccordionSection title="Educational Summary" icon={Info} defaultOpen={false}>
+                <div className="space-y-3">
+                  <p className="font-bold text-[#1D3B23] leading-relaxed">{plant.wikipediaEnrichment.summary}</p>
+                  <a 
+                    href={plant.wikipediaEnrichment.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#1b5e20] hover:text-[#2e7d32] transition-colors"
+                  >
+                    <span>Learn More on Wikipedia</span>
+                    <ExternalLink size={12} />
+                  </a>
+                  <p className="text-[9px] text-[#1D3B23]/40 uppercase tracking-wider">Source: {plant.wikipediaEnrichment.source}</p>
+                </div>
+              </AccordionSection>
+            )}
+
+            {/* PHASE 3: Trefle Botanical Enrichment */}
+            {plant.trefleEnrichment && (
+              <AccordionSection title="Botanical Database Info" icon={Database} defaultOpen={false}>
+                <div className="space-y-3">
+                  {plant.trefleEnrichment.taxonomy && (
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[#1b5e20]/60 mb-1">Taxonomy</p>
+                      <p className="text-xs font-bold text-[#1D3B23]">
+                        {plant.trefleEnrichment.taxonomy.family && `Family: ${plant.trefleEnrichment.taxonomy.family}`}
+                        {plant.trefleEnrichment.taxonomy.genus && ` • Genus: ${plant.trefleEnrichment.taxonomy.genus}`}
+                      </p>
+                    </div>
+                  )}
+                  {plant.trefleEnrichment.growth && (
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[#1b5e20]/60 mb-1">Growth Requirements</p>
+                      {plant.trefleEnrichment.growth.light && (
+                        <p className="text-xs font-bold text-[#1D3B23]">Light: {plant.trefleEnrichment.growth.light}</p>
+                      )}
+                      {plant.trefleEnrichment.growth.phGrowth && (
+                        <p className="text-xs font-bold text-[#1D3B23]">pH Range: {plant.trefleEnrichment.growth.phGrowth}</p>
+                      )}
+                      {plant.trefleEnrichment.growth.soilTexture && (
+                        <p className="text-xs font-bold text-[#1D3B23]">Soil: {plant.trefleEnrichment.growth.soilTexture}</p>
+                      )}
+                    </div>
+                  )}
+                  {plant.trefleEnrichment.distribution && (plant.trefleEnrichment.distribution.native?.length > 0) && (
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[#1b5e20]/60 mb-1">Native Distribution</p>
+                      <p className="text-xs font-bold text-[#1D3B23]">{plant.trefleEnrichment.distribution.native.join(', ')}</p>
+                    </div>
+                  )}
+                  <p className="text-[9px] text-[#1D3B23]/40 uppercase tracking-wider">Source: {plant.trefleEnrichment.source}</p>
+                </div>
+              </AccordionSection>
+            )}
           </div>
+
+          {/* PHASE 3: Recipe/Care Videos */}
+          {plant.recipeVideos && plant.recipeVideos.length > 0 && (
+            <div className="px-6 pb-6">
+              <div className="mb-4">
+                <h3 className="text-lg font-black text-[#1b5e20] flex items-center gap-2">
+                  <Youtube size={20} />
+                  {plant.isEdible ? 'Recipe & Preparation Videos' : 'Care & Cultivation Videos'}
+                </h3>
+                <p className="text-xs text-[#2e7d32]/70 mt-1">
+                  {plant.isEdible ? 'Learn how to prepare and cook this plant' : 'Learn how to grow and care for this plant'}
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-4">
+                {plant.recipeVideos.slice(0, 3).map((video, idx) => (
+                  <div key={idx} className="bg-[#1b5e20]/5 rounded-2xl p-4 border border-[#1b5e20]/10">
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-[#D63434] flex items-center justify-center flex-shrink-0">
+                        <Youtube size={24} className="text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-black text-[#1D3B23] line-clamp-2 mb-1">{video.title}</h4>
+                        <p className="text-xs text-[#2e7d32]/60 mb-2">{video.channel}</p>
+                        {video.reason && (
+                          <p className="text-xs text-[#1D3B23]/70 mb-2 italic">{video.reason}</p>
+                        )}
+                        <a 
+                          href={video.link} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#D63434] hover:text-[#c62828] transition-colors"
+                        >
+                          <Play size={12} fill="currentColor" />
+                          <span>Watch Video</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* --- XAI / RESEARCH METRICS (dark panel inside green card) --- */}
           <div className="px-6 pb-6">

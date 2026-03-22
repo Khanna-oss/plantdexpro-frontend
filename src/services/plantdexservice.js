@@ -2,6 +2,8 @@ import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/gen
 import { aiNutritionLookup } from "./ainutritionlookup.js";
 import { videoRecommendationService } from "./videorecommendationservice.js";
 import { plantVerificationService } from "./plantVerificationService.js";
+import { trefleService } from "./trefleService.js";
+import { wikipediaService } from "./wikipediaService.js";
 
 export const plantDexService = {
   identifyPlant: async (base64Image) => {
@@ -82,6 +84,27 @@ export const plantDexService = {
             p.botanicalData = { ...p.botanicalData, ...nutrition.botanicalData };
             p.healthHints = nutrition.healthHints;
           }
+        }
+        
+        // PHASE 3: Fetch enrichment data (Trefle, Wikipedia, YouTube)
+        // Run in parallel for better performance
+        const [trefleData, wikiData, videos] = await Promise.all([
+          trefleService.getTrefleEnrichment(p.scientificName, p.commonName).catch(() => null),
+          wikipediaService.getWikipediaEnrichment(p.scientificName, p.commonName).catch(() => null),
+          p.isEdible 
+            ? videoRecommendationService.getRecommendedVideos(p.commonName, 'recipes').catch(() => [])
+            : videoRecommendationService.getRecommendedVideos(p.commonName, 'care').catch(() => [])
+        ]);
+        
+        // Attach enrichment data
+        if (trefleData) {
+          p.trefleEnrichment = trefleData;
+        }
+        if (wikiData) {
+          p.wikipediaEnrichment = wikiData;
+        }
+        if (videos && videos.length > 0) {
+          p.recipeVideos = videos;
         }
         
         // Save to history with verification metadata
