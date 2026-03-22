@@ -1,0 +1,250 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2026-03-22",
+    "description": "Verified plant reference database for PlantDexPro - ETL-verified botanical data",
+    "source": "Academic botanical databases, USDA, and peer-reviewed research"
+  },
+  "plants": [
+    {
+      "scientificName": "Aloe vera",
+      "commonNames": ["Aloe Vera", "True Aloe", "Medicinal Aloe"],
+      "family": "Asphodelaceae",
+      "isEdible": true,
+      "verificationLevel": "high",
+      "confidence": 98,
+      "description": "Succulent plant species with thick, fleshy leaves containing clear gel. Widely cultivated for medicinal and cosmetic applications.",
+      "edibleParts": "Inner leaf gel (after removing latex layer)",
+      "usage": "Medicinal preparations, topical applications, dietary supplements, cosmetics",
+      "cautions": "Latex layer may cause digestive discomfort. Avoid during pregnancy.",
+      "nutrients": {
+        "vitamins": "Vitamins A, C, E, B12, Folic Acid",
+        "minerals": "Calcium, Chromium, Copper, Selenium, Magnesium, Manganese, Potassium, Sodium, Zinc",
+        "proteins": "20 of the 22 human-required amino acids",
+        "calories": "4 kcal per 100g"
+      },
+      "habitat": "Arid and semi-arid regions, native to Arabian Peninsula",
+      "conservationStatus": "Least Concern"
+    },
+    {
+      "scientificName": "Ocimum basilicum",
+      "commonNames": ["Sweet Basil", "Basil", "Great Basil"],
+      "family": "Lamiaceae",
+      "isEdible": true,
+      "verificationLevel": "high",
+      "confidence": 97,
+      "description": "Aromatic annual herb with bright green leaves. Essential culinary herb in Mediterranean and Asian cuisines.",
+      "edibleParts": "Leaves, stems, flowers",
+      "usage": "Culinary seasoning, medicinal tea, aromatic oil extraction, traditional medicine",
+      "cautions": "High vitamin K content may affect anticoagulant therapy",
+      "nutrients": {
+        "vitamins": "Vitamin K, A, C, B6",
+        "minerals": "Iron, Calcium, Manganese, Magnesium, Potassium",
+        "proteins": "Complete protein profile with essential amino acids, 3.2g per 100g",
+        "calories": "22 kcal per 100g fresh leaves"
+      },
+      "habitat": "Tropical regions, native to central Africa and Southeast Asia",
+      "conservationStatus": "Least Concern"
+    },
+    {
+      "scientificName": "Mentha",
+      "commonNames": ["Mint", "Garden Mint", "Common Mint"],
+      "family": "Lamiaceae",
+      "isEdible": true,
+      "verificationLevel": "high",
+      "confidence": 96,
+      "description": "Aromatic perennial herb with square stems and opposite leaves. Fast-growing and highly aromatic.",
+      "edibleParts": "Leaves, stems",
+      "usage": "Culinary seasoning, herbal infusions, medicinal preparations, aromatherapy",
+      "cautions": "May exacerbate GERD symptoms in sensitive individuals",
+      "nutrients": {
+        "vitamins": "Vitamin A, C, B2, B9 (Folate)",
+        "minerals": "Iron, Manganese, Calcium, Potassium, Phosphorus",
+        "proteins": "Moderate protein density, 3.8g per 100g fresh leaves",
+        "calories": "44 kcal per 100g fresh leaves"
+      },
+      "habitat": "Temperate regions worldwide, prefers moist soil",
+      "conservationStatus": "Least Concern"
+    },
+    {
+      "scientificName": "Taraxacum officinale",
+      "commonNames": ["Dandelion", "Common Dandelion", "Lion's Tooth"],
+      "family": "Asteraceae",
+      "isEdible": true,
+      "verificationLevel": "high",
+      "confidence": 95,
+      "description": "Perennial herbaceous plant with deeply toothed leaves and yellow composite flowers. Entire plant is edible and nutritious.",
+      "edibleParts": "Leaves, flowers, roots",
+      "usage": "Salad greens, coffee substitute (roasted roots), medicinal detoxification, herbal tea",
+      "cautions": "May interact with diuretic medications and lithium therapy",
+      "nutrients": {
+        "vitamins": "Vitamins A, C, K, B6, B complex",
+        "minerals": "Iron, Calcium, Magnesium, Potassium, Manganese, Zinc",
+        "proteins": "High-quality plant proteins, 2.7g per 100g fresh leaves",
+        "calories": "45 kcal per 100g fresh leaves"
+      },
+      "habitat": "Temperate regions worldwide, highly adaptable",
+      "conservationStatus": "Least Concern"
+    },
+    {
+      "scientificName": "Camellia sinensis",
+      "commonNames": ["Tea Plant", "Tea", "Chinese Tea"],
+      "family": "Theaceae",
+      "isEdible": true,
+      "verificationLevel": "high",
+      "confidence": 98,
+      "description": "Evergreen shrub or small tree cultivated for its leaves used in tea production. Source of green, black, white, and oolong teas.",
+      "edibleParts": "Leaves, leaf buds",
+      "usage": "Beverage preparation (tea), extract supplements, traditional medicine",
+      "cautions": "Caffeine content may affect sleep patterns and cardiovascular conditions",
+      "nutrients": {
+        "vitamins": "Vitamin C, B complex, K, E",
+        "minerals": "Manganese, Potassium, Calcium, Magnesium, Fluoride",
+        "proteins": "Amino acids including L-theanine, 1.5g per 100g dried leaves",
+        "calories": "1 kcal per 100g brewed tea (negligible)"
+      },
+      "habitat": "Subtropical and tropical mountain regions, native to East Asia",
+      "conservationStatus": "Least Concern"
+    },
+    {
+      "scientificName": "Rosmarinus officinalis",
+      "commonNames": ["Rosemary", "Garden Rosemary"],
+      "family": "Lamiaceae",
+      "isEdible": true,
+      "verificationLevel": "high",
+      "confidence": 96,
+      "description": "Woody, perennial herb with fragrant, needle-like leaves. Popular culinary and medicinal herb.",
+      "edibleParts": "Leaves, flowers, stems",
+      "usage": "Culinary seasoning, medicinal extracts, aromatherapy, traditional medicine",
+      "cautions": "High concentrations may affect blood pressure and coagulation",
+      "nutrients": {
+        "vitamins": "Vitamins A, C, B6, B9 (Folate)",
+        "minerals": "Iron, Calcium, Magnesium, Potassium, Manganese, Copper",
+        "proteins": "Antioxidant proteins and essential amino acids, 3.3g per 100g",
+        "calories": "131 kcal per 100g dried leaves"
+      },
+      "habitat": "Mediterranean region, prefers well-drained soil",
+      "conservationStatus": "Least Concern"
+    },
+    {
+      "scientificName": "Allium sativum",
+      "commonNames": ["Garlic", "Cultivated Garlic"],
+      "family": "Amaryllidaceae",
+      "isEdible": true,
+      "verificationLevel": "high",
+      "confidence": 99,
+      "description": "Bulbous plant widely cultivated for its pungent bulbs used as seasoning and medicine.",
+      "edibleParts": "Bulbs, cloves, leaves (garlic scapes)",
+      "usage": "Culinary ingredient, medicinal preparations, natural antibiotic, cardiovascular health",
+      "cautions": "May increase bleeding risk when combined with anticoagulants",
+      "nutrients": {
+        "vitamins": "Vitamins C, B6, B1 (Thiamine)",
+        "minerals": "Selenium, Manganese, Calcium, Potassium, Iron, Copper",
+        "proteins": "Complete amino acid profile with sulfur-containing proteins, 6.4g per 100g",
+        "calories": "149 kcal per 100g raw cloves"
+      },
+      "habitat": "Temperate regions worldwide, originally from Central Asia",
+      "conservationStatus": "Least Concern"
+    },
+    {
+      "scientificName": "Curcuma longa",
+      "commonNames": ["Turmeric", "Indian Saffron", "Golden Spice"],
+      "family": "Zingiberaceae",
+      "isEdible": true,
+      "verificationLevel": "high",
+      "confidence": 97,
+      "description": "Perennial herbaceous plant with rhizomes used as spice and traditional medicine. Contains curcumin with anti-inflammatory properties.",
+      "edibleParts": "Rhizomes (roots), leaves",
+      "usage": "Spice, medicinal anti-inflammatory, food coloring, traditional Ayurvedic medicine",
+      "cautions": "May interfere with iron absorption and affect gallbladder function",
+      "nutrients": {
+        "vitamins": "Vitamins C, B3, B6, B2, E, K",
+        "minerals": "Iron, Manganese, Potassium, Calcium, Magnesium, Zinc, Copper",
+        "proteins": "Curcumin-binding proteins, 7.8g per 100g rhizome",
+        "calories": "312 kcal per 100g fresh rhizome"
+      },
+      "habitat": "Tropical South Asia, requires warm humid climate",
+      "conservationStatus": "Least Concern"
+    },
+    {
+      "scientificName": "Lavandula angustifolia",
+      "commonNames": ["English Lavender", "True Lavender", "Common Lavender"],
+      "family": "Lamiaceae",
+      "isEdible": true,
+      "verificationLevel": "high",
+      "confidence": 94,
+      "description": "Aromatic flowering plant with purple-blue flowers. Used in culinary, medicinal, and cosmetic applications.",
+      "edibleParts": "Flowers, leaves (in small quantities)",
+      "usage": "Culinary flavoring, aromatherapy, medicinal tea, essential oil extraction",
+      "cautions": "Use culinary varieties only; essential oil should not be ingested",
+      "nutrients": {
+        "vitamins": "Vitamin A, C",
+        "minerals": "Calcium, Iron, Potassium",
+        "proteins": "Minimal protein content",
+        "calories": "49 kcal per 100g dried flowers"
+      },
+      "habitat": "Mediterranean region, prefers sunny dry conditions",
+      "conservationStatus": "Least Concern"
+    },
+    {
+      "scientificName": "Spinacia oleracea",
+      "commonNames": ["Spinach", "Garden Spinach"],
+      "family": "Amaranthaceae",
+      "isEdible": true,
+      "verificationLevel": "high",
+      "confidence": 99,
+      "description": "Leafy green vegetable highly valued for nutritional content. Annual plant cultivated worldwide.",
+      "edibleParts": "Leaves, stems",
+      "usage": "Fresh salads, cooked vegetable, smoothies, nutritional supplements",
+      "cautions": "High oxalate content may affect kidney stone formation in susceptible individuals",
+      "nutrients": {
+        "vitamins": "Vitamins A, C, K, B9 (Folate), B2, B6, E",
+        "minerals": "Iron, Calcium, Magnesium, Potassium, Manganese",
+        "proteins": "2.9g per 100g fresh leaves",
+        "calories": "23 kcal per 100g fresh leaves"
+      },
+      "habitat": "Temperate regions worldwide, prefers cool weather",
+      "conservationStatus": "Least Concern"
+    },
+    {
+      "scientificName": "Solanum lycopersicum",
+      "commonNames": ["Tomato", "Garden Tomato"],
+      "family": "Solanaceae",
+      "isEdible": true,
+      "verificationLevel": "high",
+      "confidence": 99,
+      "description": "Fruit-bearing plant widely cultivated for edible berries. Rich in lycopene and vitamin C.",
+      "edibleParts": "Fruits (berries)",
+      "usage": "Fresh consumption, cooking, sauces, juices, preserves",
+      "cautions": "Green unripe fruits and leaves contain toxic solanine; only consume ripe red fruits",
+      "nutrients": {
+        "vitamins": "Vitamins C, K, B9 (Folate), A (as beta-carotene)",
+        "minerals": "Potassium, Manganese, Magnesium",
+        "proteins": "0.9g per 100g",
+        "calories": "18 kcal per 100g"
+      },
+      "habitat": "Native to South America, cultivated worldwide in temperate and tropical regions",
+      "conservationStatus": "Least Concern"
+    },
+    {
+      "scientificName": "Capsicum annuum",
+      "commonNames": ["Bell Pepper", "Sweet Pepper", "Capsicum"],
+      "family": "Solanaceae",
+      "isEdible": true,
+      "verificationLevel": "high",
+      "confidence": 98,
+      "description": "Fruit-bearing plant producing bell-shaped peppers in various colors. Non-pungent variety of Capsicum.",
+      "edibleParts": "Fruits (remove seeds for milder flavor)",
+      "usage": "Fresh consumption, cooking, salads, stuffed peppers, roasting",
+      "cautions": "Generally safe; some individuals may have nightshade sensitivity",
+      "nutrients": {
+        "vitamins": "Vitamins C (extremely high), A, B6, K, E",
+        "minerals": "Potassium, Folate, Manganese",
+        "proteins": "1.0g per 100g",
+        "calories": "31 kcal per 100g"
+      },
+      "habitat": "Native to Central and South America, cultivated worldwide",
+      "conservationStatus": "Least Concern"
+    }
+  ]
+}

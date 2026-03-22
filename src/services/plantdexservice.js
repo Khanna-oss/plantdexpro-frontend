@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { aiNutritionLookup } from "./ainutritionlookup.js";
 import { videoRecommendationService } from "./videorecommendationservice.js";
+import { plantVerificationService } from "./plantVerificationService.js";
 
 export const plantDexService = {
   identifyPlant: async (base64Image) => {
@@ -59,37 +60,43 @@ export const plantDexService = {
 
       const data = JSON.parse(response.text || "{}");
       if (data.plants?.[0]) {
-        const p = data.plants[0];
+        let p = data.plants[0];
         
-        // Check for cross-verification in local cache
-        const verificationStatus = plantDexService.checkVerificationStatus(p.scientificName, p.commonName);
-        p.etlVerified = verificationStatus.isVerified;
-        p.verificationCount = verificationStatus.count;
+        // PHASE 2: Verify against local database and enrich with verified data
+        p = plantVerificationService.verifyPlantIdentification(p);
         
-        // Trigger enriched nutrition data for edible species
-        if (p.isEdible) {
+        // Add XAI metadata for transparency
+        p.xaiMeta = {
+          confidence: p.confidenceScore || 0,
+          latency: Date.now(),
+          source: p.dataSource || 'ai_inference_only',
+          verificationLevel: p.verificationLevel || 'none'
+        };
+        
+        // Trigger enriched nutrition data for edible species (if not already from verified DB)
+        if (p.isEdible && !p.nutrients) {
           const tags = p.visualFeatures?.map(f => f.reason) || [];
           const nutrition = await aiNutritionLookup.fetchNutrition(p.commonName, p.scientificName, tags);
           if (nutrition) {
             p.nutrients = nutrition.nutrients;
-            p.botanicalData = nutrition.botanicalData || {};
+            p.botanicalData = { ...p.botanicalData, ...nutrition.botanicalData };
             p.healthHints = nutrition.healthHints;
           }
         }
         
-        // Save to history and update verification cache
+        // Save to history with verification metadata
         plantDexService.saveToHistory({
           name: p.commonName || p.scientificName,
+          scientificName: p.scientificName,
           date: new Date().toLocaleDateString(),
           image: `data:image/jpeg;base64,${base64Image}`,
           isEdible: p.isEdible,
-          confidence: p.confidenceScore || 0
+          confidence: p.confidenceScore || 0,
+          verified: p.verificationStatus === 'verified',
+          dataSource: p.dataSource
         });
         
-        // Update verification cache for high-confidence identifications
-        if (p.confidenceScore >= 85) {
-          plantDexService.updateVerificationCache(p.scientificName, p.commonName, p.confidenceScore);
-        }
+        data.plants[0] = p;
       }
       return data;
     } catch (e) {
@@ -98,34 +105,18 @@ export const plantDexService = {
     }
   },
 
+  // Delegate to plantVerificationService
   checkVerificationStatus: (scientificName, commonName) => {
-    const cache = plantDexService.getVerificationCache();
-    const key = (scientificName || commonName || "").toLowerCase();
-    const entry = cache[key];
-    
-    return {
-      isVerified: entry && entry.count >= 3 && entry.avgConfidence >= 85,
-      count: entry?.count || 0,
-      avgConfidence: entry?.avgConfidence || 0
-    };
+    return plantVerificationService.checkVerificationStatus(scientificName, commonName);
   },
 
-  updateVerificationCache: (scientificName, commonName, confidence) => {
-    const cache = plantDexService.getVerificationCache();
-    const key = (scientificName || commonName || "").toLowerCase();
-    
-    if (!cache[key]) {
-      cache[key] = { count: 0, totalConfidence: 0, avgConfidence: 0 };
-    }
-    
-    cache[key].count += 1;
-    cache[key].totalConfidence += confidence;
-    cache[key].avgConfidence = Math.round(cache[key].totalConfidence / cache[key].count);
-    
-    localStorage.setItem('plantdex_verification_v1', JSON.stringify(cache));
+  getVerificationStats: () => {
+    return plantVerificationService.getVerificationStats();
   },
 
-  getVerificationCache: () => JSON.parse(localStorage.getItem('plantdex_verification_v1') || '{}'),
+  getVerifiedPlants: () => {
+    return plantVerificationService.getVerifiedPlants();
+  },
 
   findSpecificRecipes: async (query) => {
     return await videoRecommendationService.getRecommendedVideos(query, 'recipes');

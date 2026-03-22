@@ -76,13 +76,19 @@ export const ResultsDisplay = ({ results, imagePreview }) => {
   if (!results || results.length === 0) return null;
 
   const plant = results[0];
-  const etlVerified = Boolean(plant.etlVerified || plant.nutrients?.isVerified);
+  
+  // PHASE 2: Enhanced verification and provenance tracking
+  const verificationStatus = plant.verificationStatus || 'unverified';
+  const verificationLevel = plant.verificationLevel || 'none';
+  const dataSource = plant.dataSource || 'ai_inference_only';
+  const provenance = plant.provenance || { primary: 'Gemini AI', verified: false };
+  const isVerified = verificationStatus === 'verified' || verificationStatus === 'cache_verified';
+  
   const confidence = resolveConfidence(plant);
   const latency = resolveLatency(plant);
   const featureContributions = buildContributions(plant);
   const nutrients = plant.nutrients || {};
   const botanicalData = plant.botanicalData || {};
-  const dataSource = nutrients.source || plant.xaiMeta?.source || 'Gemini AI Inference';
   const healthHints = plant.healthHints || [];
 
   const nutrientFields = [
@@ -106,12 +112,21 @@ export const ResultsDisplay = ({ results, imagePreview }) => {
             <span className={`result-badge ${plant.isEdible ? 'result-badge-verified' : 'result-badge-inference'}`}>
               {plant.isEdible ? '✓ Edible Species' : '⚠ Non-Edible'}
             </span>
-            <span className={`result-badge ${etlVerified ? 'result-badge-verified' : 'result-badge-inference'}`}>
-              {etlVerified ? <><Shield size={10} /> ETL Verified</> : <><ShieldAlert size={10} /> AI Inference</>}
+            <span className={`result-badge ${isVerified ? 'result-badge-verified' : 'result-badge-inference'}`}>
+              {isVerified ? (
+                <><Database size={10} /> {verificationStatus === 'verified' ? 'ETL Verified' : 'Cache Verified'}</>
+              ) : (
+                <><ShieldAlert size={10} /> AI Inference Only</>
+              )}
             </span>
             <span className="result-badge result-badge-verified">
-              <ShieldCheck size={10} /> {confidence}% Match
+              <ShieldCheck size={10} /> {confidence}% Confidence
             </span>
+            {verificationLevel === 'high' && (
+              <span className="result-badge result-badge-verified">
+                <Sparkles size={10} /> High Quality
+              </span>
+            )}
           </div>
 
           {/* --- IDENTITY HEADER --- */}
@@ -328,9 +343,15 @@ export const ResultsDisplay = ({ results, imagePreview }) => {
                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <Database size={12} className="text-[var(--cream)]/40" />
-                    <span className="text-[8px] font-black uppercase tracking-widest text-[var(--cream)]/40">Source</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-[var(--cream)]/40">Data Source</span>
                   </div>
-                  <p className="text-[11px] font-bold text-[var(--cream)] leading-tight">{dataSource}</p>
+                  <p className="text-[11px] font-bold text-[var(--cream)] leading-tight">
+                    {provenance.primary}
+                    {provenance.verified && <span className="text-[#CCFF00] ml-1">✓</span>}
+                  </p>
+                  {provenance.note && (
+                    <p className="text-[9px] text-[var(--cream)]/50 mt-1 leading-tight">{provenance.note}</p>
+                  )}
                 </div>
                 <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                   <div className="flex items-center gap-1.5 mb-1.5">
