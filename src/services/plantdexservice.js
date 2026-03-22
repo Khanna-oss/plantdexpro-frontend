@@ -4,8 +4,8 @@ import { videoRecommendationService } from "./videorecommendationservice.js";
 
 export const plantDexService = {
   identifyPlant: async (base64Image) => {
-    const API_KEY = process.env.API_KEY;
-    if (!API_KEY) return { error: "Missing API Key" };
+    const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!API_KEY) return { error: "Missing Gemini API Key. Please configure VITE_GEMINI_API_KEY in .env file." };
     
     const ai = new GoogleGenAI({ apiKey: API_KEY });
 

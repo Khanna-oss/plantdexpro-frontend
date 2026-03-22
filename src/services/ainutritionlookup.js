@@ -6,7 +6,7 @@ const TTL = 24 * 60 * 60 * 1000;
 
 export const aiNutritionLookup = {
   fetchNutrition: async (plantName, scientificName, tags = []) => {
-    const API_KEY = process.env.API_KEY;
+    const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
     
     // 1. ETL PRIMARY CHECK (Authoritative Data Warehouse)
     const etlResult = etlNutritionService.lookup(scientificName, plantName);
