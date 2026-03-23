@@ -11,7 +11,9 @@ import { motion } from 'framer-motion';
 import { XCircle, History, Leaf } from 'lucide-react';
 import { SoilBackground } from './components/SoilBackground.jsx';
 
-const ANALYZING_MESSAGE = 'Analyzing Botanical Specimen...';
+const MILESTONE_1 = 'Extracting botanical features...';
+const MILESTONE_2 = 'Verifying species profile...';
+const MILESTONE_3 = 'Enriching with research data...';
 
 const App = () => {
   const [theme, toggleTheme] = useDarkMode();
@@ -42,8 +44,10 @@ const App = () => {
     setIsLoading(true);
     setError(null);
     setResults([]);
-    setInferenceMessage(ANALYZING_MESSAGE);
-    window.__plantDexInferenceTimers = [];
+    setInferenceMessage(MILESTONE_1);
+    const t1 = window.setTimeout(() => setInferenceMessage(MILESTONE_2), 2800);
+    const t2 = window.setTimeout(() => setInferenceMessage(MILESTONE_3), 5200);
+    window.__plantDexInferenceTimers = [t1, t2];
 
     try {
       const objectUrl = URL.createObjectURL(file);

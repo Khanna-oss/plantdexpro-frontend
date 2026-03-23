@@ -406,154 +406,193 @@ export const ResultsDisplay = ({ results, imagePreview }) => {
             </div>
           )}
 
-          {/* --- XAI / RESEARCH METRICS (dark panel inside green card) --- */}
+          {/* --- XAI BENTO HUD — PHASE 2 SCI-FI REDESIGN --- */}
           <div className="px-6 pb-6">
-            <div className="research-metrics-panel p-5 md:p-6 space-y-5">
-              
-              {/* Header */}
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-[#CCFF00]/10 rounded-xl">
-                    <Microscope size={18} className="text-[#CCFF00]" />
-                  </div>
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.25em] text-[#CCFF00]/60">Research Parameters</p>
-                    <h3 className="text-lg text-[var(--cream)] leading-none font-bold">XAI Interpretability Metrics</h3>
-                  </div>
-                </div>
-                <div className={`result-badge ${etlVerified ? 'result-badge-verified' : 'result-badge-inference'} !bg-opacity-20`} style={{ background: etlVerified ? 'rgba(102,187,106,0.15)' : 'rgba(239,83,80,0.15)', color: etlVerified ? '#a5d6a7' : '#ef9a9a', border: etlVerified ? '1px solid rgba(102,187,106,0.3)' : '1px solid rgba(239,83,80,0.3)' }}>
-                  {etlVerified ? <Shield size={10} /> : <ShieldAlert size={10} />}
-                  {etlVerified ? 'ETL Verified' : 'Inference Only'}
-                </div>
-              </div>
+            <div className="research-metrics-panel p-5 md:p-6 relative overflow-hidden">
 
-              {/* Metrics Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <Activity size={12} className="text-[#CCFF00]/60" />
-                    <span className="text-[8px] font-black uppercase tracking-widest text-[#CCFF00]/60">Confidence</span>
-                  </div>
-                  <p className="text-2xl font-black text-[#CCFF00] tabular-nums">{confidence}%</p>
-                </div>
-                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <Clock size={12} className="text-[var(--cream)]/40" />
-                    <span className="text-[8px] font-black uppercase tracking-widest text-[var(--cream)]/40">Latency</span>
-                  </div>
-                  <p className="text-2xl font-black text-[var(--cream)] tabular-nums">{latency}<span className="text-xs ml-0.5">ms</span></p>
-                </div>
-                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <Database size={12} className="text-[var(--cream)]/40" />
-                    <span className="text-[8px] font-black uppercase tracking-widest text-[var(--cream)]/40">Data Source</span>
-                  </div>
-                  <p className="text-[11px] font-bold text-[var(--cream)] leading-tight">
-                    {provenance.primary}
-                    {provenance.verified && <span className="text-[#CCFF00] ml-1">✓</span>}
-                  </p>
-                  {provenance.note && (
-                    <p className="text-[9px] text-[var(--cream)]/50 mt-1 leading-tight">{provenance.note}</p>
-                  )}
-                </div>
-                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <Zap size={12} className="text-[var(--cream)]/40" />
-                    <span className="text-[8px] font-black uppercase tracking-widest text-[var(--cream)]/40">Model</span>
-                  </div>
-                  <p className="text-[11px] font-bold text-[var(--cream)] leading-tight">Gemini 3 Flash + CatBoost</p>
-                </div>
-              </div>
+              {/* CRT scan-line texture */}
+              <div className="absolute inset-0 pointer-events-none z-0" style={{
+                backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(204,255,0,0.012) 3px, rgba(204,255,0,0.012) 4px)'
+              }} />
 
-              {/* PHASE 4: Enhanced Confidence Visualization */}
-              <div>
-                <div className="flex justify-between items-end mb-3">
-                  <div>
-                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--cream)]/50">Model Confidence Level</span>
-                    <p className="text-[10px] text-[var(--cream)]/30 mt-0.5">
-                      {confidence >= 90 ? 'Very High Certainty' : confidence >= 75 ? 'High Certainty' : confidence >= 60 ? 'Moderate Certainty' : 'Low Certainty'}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-2xl font-black text-[#CCFF00] tabular-nums">{confidence}%</span>
-                    <p className="text-[8px] text-[var(--cream)]/30 uppercase tracking-wider">Match Score</p>
-                  </div>
-                </div>
-                <div className="metric-bar-track h-4 p-0.5 relative" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <motion.div 
-                    initial={{ width: 0 }} 
-                    animate={{ width: `${confidence}%` }} 
-                    transition={{ duration: 1.5, ease: "circOut" }} 
-                    className="metric-bar-fill h-full rounded-md"
-                    style={{
-                      background: confidence >= 90 
-                        ? 'linear-gradient(90deg, #66bb6a, #81c784)' 
-                        : confidence >= 75 
-                        ? 'linear-gradient(90deg, #CCFF00, #9ccc65)' 
-                        : confidence >= 60
-                        ? 'linear-gradient(90deg, #ffd54f, #ffb74d)'
-                        : 'linear-gradient(90deg, #ff8a65, #ef5350)'
-                    }}
-                  />
-                </div>
-                <div className="flex justify-between mt-1.5 text-[8px] text-[var(--cream)]/20 uppercase tracking-wider">
-                  <span>0%</span>
-                  <span>50%</span>
-                  <span>100%</span>
-                </div>
-              </div>
+              <div className="relative z-10 space-y-5">
 
-              {/* PHASE 4: SHAP/LIME-Inspired Feature Importance */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--cream)]/50">Why This Identification?</span>
-                  <span className="text-[8px] text-[var(--cream)]/30 uppercase tracking-wider">SHAP/LIME Analysis</span>
-                </div>
-                <p className="text-[11px] text-[var(--cream)]/60 leading-relaxed">
-                  Identified based on {featureContributions.length} key morphological features. Each feature's contribution to the final classification is shown below.
-                </p>
-                {featureContributions.map((f, idx) => (
-                  <div key={f.label} className="bg-white/5 rounded-xl p-3 border border-white/5 hover:bg-white/8 transition-colors">
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-[var(--cream)]">{f.label}</span>
-                          <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider" style={{
-                            background: idx === 0 ? 'rgba(204,255,0,0.15)' : 'rgba(255,255,255,0.08)',
-                            color: idx === 0 ? '#CCFF00' : 'rgba(245,245,220,0.5)'
-                          }}>
-                            {idx === 0 ? 'Primary' : `Rank ${idx + 1}`}
-                          </span>
-                        </div>
-                        <span className="text-[10px] text-[var(--cream)]/50 leading-relaxed">{f.detail}</span>
+                {/* ── Terminal Boot Header ── */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#CCFF00] animate-pulse" />
+                    <span className="text-[8px] font-black uppercase tracking-[0.4em] text-[#CCFF00]/40">XAI_ENGINE · v3.0 · ONLINE</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-[#CCFF00]/10 rounded-xl border border-[#CCFF00]/20">
+                        <Microscope size={18} className="text-[#CCFF00]" />
                       </div>
-                      <span className="text-xs font-black text-[#CCFF00] tabular-nums">{f.score}%</span>
+                      <div>
+                        <p className="text-[9px] font-black uppercase tracking-[0.25em] text-[#CCFF00]/60">Explainable AI Diagnostics</p>
+                        <h3 className="text-lg text-[var(--cream)] leading-none font-bold">XAI Interpretability Report</h3>
+                      </div>
                     </div>
-                    <div className="metric-bar-track h-2" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${f.score}%` }}
-                        transition={{ duration: 1.2, delay: idx * 0.1, ease: "easeOut" }}
-                        className="metric-bar-fill h-full rounded-sm"
-                        style={{
-                          background: idx === 0 
-                            ? 'linear-gradient(90deg, #CCFF00, #9ccc65)' 
-                            : 'linear-gradient(90deg, rgba(204,255,0,0.6), rgba(156,204,101,0.4))'
-                        }}
-                      />
+                    <div className="result-badge" style={{
+                      background: etlVerified ? 'rgba(102,187,106,0.15)' : 'rgba(239,83,80,0.15)',
+                      color: etlVerified ? '#a5d6a7' : '#ef9a9a',
+                      border: etlVerified ? '1px solid rgba(102,187,106,0.3)' : '1px solid rgba(239,83,80,0.3)'
+                    }}>
+                      {etlVerified ? <Shield size={10} /> : <ShieldAlert size={10} />}
+                      {etlVerified ? 'ETL Verified' : 'Inference Only'}
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
 
-              {/* Bottom Strip */}
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-3 border-t border-white/5">
-                <span className="text-[8px] font-black uppercase tracking-widest text-[var(--cream)]/30">XAI Engine: Gemini 3 Flash + ETL Shield</span>
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full animate-pulse ${etlVerified ? 'bg-emerald-400' : 'bg-rose-400'}`} />
-                  <span className={`text-[8px] font-black uppercase tracking-widest ${etlVerified ? 'text-emerald-300/70' : 'text-rose-300/70'}`}>
-                    {etlVerified ? 'Ground truth synchronized' : 'Inference surface active'}
-                  </span>
+                {/* ── Bento Metric Grid ── */}
+                <div className="grid grid-cols-12 gap-2.5">
+
+                  {/* Hero: SVG Arc Confidence Tile */}
+                  <div className="col-span-12 sm:col-span-7 bg-[#CCFF00]/5 rounded-2xl p-4 border border-[#CCFF00]/15 relative overflow-hidden">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <Activity size={11} className="text-[#CCFF00]/70" />
+                          <span className="text-[8px] font-black uppercase tracking-[0.3em] text-[#CCFF00]/60">Confidence Score</span>
+                        </div>
+                        <p className="text-5xl font-black text-[#CCFF00] tabular-nums leading-none">
+                          {confidence}<span className="text-xl ml-0.5 font-bold">%</span>
+                        </p>
+                        <p className="text-[9px] uppercase tracking-wide text-[var(--cream)]/40 mt-2">
+                          {confidence >= 90 ? '◈ Very High Certainty' : confidence >= 75 ? '◈ High Certainty' : confidence >= 60 ? '◈ Moderate Certainty' : '◈ Low Certainty'}
+                        </p>
+                        <div className="mt-3 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${confidence}%` }}
+                            transition={{ duration: 1.8, ease: 'circOut' }}
+                            className="h-full rounded-full"
+                            style={{ background: confidence >= 90 ? '#CCFF00' : confidence >= 75 ? '#9ccc65' : confidence >= 60 ? '#ffd54f' : '#ff8a65' }}
+                          />
+                        </div>
+                      </div>
+                      {/* SVG radial arc gauge */}
+                      <svg width="76" height="76" viewBox="0 0 76 76" className="shrink-0 -rotate-90">
+                        <circle cx="38" cy="38" r="30" fill="none" stroke="rgba(204,255,0,0.08)" strokeWidth="6" />
+                        <motion.circle
+                          cx="38" cy="38" r="30"
+                          fill="none"
+                          stroke={confidence >= 90 ? '#CCFF00' : confidence >= 75 ? '#9ccc65' : confidence >= 60 ? '#ffd54f' : '#ff8a65'}
+                          strokeWidth="6"
+                          strokeLinecap="round"
+                          strokeDasharray={`${2 * Math.PI * 30}`}
+                          initial={{ strokeDashoffset: 2 * Math.PI * 30 }}
+                          animate={{ strokeDashoffset: 2 * Math.PI * 30 * (1 - confidence / 100) }}
+                          transition={{ duration: 1.8, ease: 'circOut' }}
+                        />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Right column: 3 stat tiles */}
+                  <div className="col-span-12 sm:col-span-5 grid grid-rows-3 gap-2.5">
+                    <div className="bg-white/5 rounded-xl px-3 py-2.5 border border-white/8 flex items-center gap-3">
+                      <Clock size={14} className="text-[var(--cream)]/25 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-[8px] font-black uppercase tracking-widest text-[var(--cream)]/35">Latency</p>
+                        <p className="text-xl font-black text-[var(--cream)] tabular-nums leading-none mt-0.5">
+                          {latency}<span className="text-[10px] ml-0.5 font-bold">ms</span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="bg-white/5 rounded-xl px-3 py-2.5 border border-white/8 flex items-center gap-3">
+                      <Database size={14} className="text-[var(--cream)]/25 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-[8px] font-black uppercase tracking-widest text-[var(--cream)]/35">Data Source</p>
+                        <p className="text-[11px] font-bold text-[var(--cream)] leading-tight mt-0.5 truncate">
+                          {provenance.primary}{provenance.verified && <span className="text-[#CCFF00] ml-1">✓</span>}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="bg-white/5 rounded-xl px-3 py-2.5 border border-white/8 flex items-center gap-3">
+                      <Zap size={14} className="text-[var(--cream)]/25 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-[8px] font-black uppercase tracking-widest text-[var(--cream)]/35">Model</p>
+                        <p className="text-[11px] font-bold text-[var(--cream)] leading-none mt-0.5">Gemini 3 Flash</p>
+                        <p className="text-[9px] text-[var(--cream)]/30 leading-none mt-0.5">+ ETL Verification Shield</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── SHAP / LIME Feature Importance ── */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <FlaskConical size={12} className="text-[#CCFF00]/50" />
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--cream)]/50">Why This Identification?</span>
+                    </div>
+                    <span className="text-[7px] font-black uppercase tracking-wider text-[var(--cream)]/20 border border-white/8 px-2 py-0.5 rounded-full">
+                      SHAP / LIME
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-[var(--cream)]/45 leading-relaxed mb-3">
+                    {featureContributions.length} morphological cues drove this classification. Bars represent relative SHAP value contribution.
+                  </p>
+                  <div className="space-y-3">
+                    {featureContributions.map((f, idx) => (
+                      <motion.div
+                        key={f.label}
+                        initial={{ opacity: 0, x: -6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.35, delay: 0.3 + idx * 0.1 }}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-[var(--cream)]/85">{f.label}</span>
+                            <span className="text-[7px] font-black uppercase px-1.5 py-0.5 rounded-sm" style={{
+                              background: idx === 0 ? 'rgba(204,255,0,0.15)' : 'rgba(255,255,255,0.06)',
+                              color: idx === 0 ? '#CCFF00' : 'rgba(245,245,220,0.35)'
+                            }}>
+                              {idx === 0 ? '★ PRIMARY' : `#${idx + 1}`}
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-black tabular-nums" style={{
+                            color: idx === 0 ? '#CCFF00' : 'rgba(245,245,220,0.55)'
+                          }}>{f.score}%</span>
+                        </div>
+                        <div className="relative h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${f.score}%` }}
+                            transition={{ duration: 1.0, delay: 0.45 + idx * 0.15, ease: 'easeOut' }}
+                            className="absolute inset-y-0 left-0 rounded-full"
+                            style={{
+                              background: idx === 0
+                                ? 'linear-gradient(90deg, #CCFF00, #9ccc65)'
+                                : 'linear-gradient(90deg, rgba(204,255,0,0.5), rgba(156,204,101,0.3))'
+                            }}
+                          />
+                          {idx === 0 && (
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${f.score}%` }}
+                              transition={{ duration: 1.0, delay: 0.45, ease: 'easeOut' }}
+                              className="absolute inset-y-0 left-0"
+                              style={{ background: 'linear-gradient(90deg, rgba(204,255,0,0.35), transparent)', filter: 'blur(3px)' }}
+                            />
+                          )}
+                        </div>
+                        <p className="text-[9px] text-[var(--cream)]/30 mt-0.5 leading-snug">{f.detail}</p>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ── Status Footer ── */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-3 border-t border-white/5">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${etlVerified ? 'bg-[#CCFF00]' : 'bg-rose-400'}`} />
+                    <span className="text-[8px] font-black uppercase tracking-[0.35em] text-[var(--cream)]/25">
+                      {etlVerified ? 'ETL Ground Truth Sync Active' : 'AI Inference Surface Active'}
+                    </span>
+                  </div>
+                  <span className="text-[8px] text-[var(--cream)]/15 tracking-widest uppercase">SAVE_SOIL · XAI v3.0</span>
                 </div>
               </div>
             </div>
