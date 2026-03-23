@@ -98,7 +98,7 @@ export const ImageUploader = ({ onIdentify, isLoading, loadingMessage, onClear, 
           {isLoading ? (
             <>
                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-               <span className="truncate">{loadingMessage || 'Stage 1: Feature Extraction & Scalar Value Mapping...'}</span>
+               <span className="truncate">{loadingMessage || 'Analyzing...'}</span>
             </>
           ) : (
             <>
@@ -107,11 +107,6 @@ export const ImageUploader = ({ onIdentify, isLoading, loadingMessage, onClear, 
             </>
           )}
         </button>
-        {isLoading && loadingMessage && (
-          <div className="glass-card px-4 py-3 text-center text-[11px] uppercase tracking-[0.24em] text-[var(--cream)]">
-            {loadingMessage}
-          </div>
-        )}
       </div>
     </div>
   );

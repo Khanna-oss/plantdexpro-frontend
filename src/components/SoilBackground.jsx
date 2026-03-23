@@ -41,8 +41,8 @@ export const SoilBackground = () => {
               backgroundRepeat: 'no-repeat'
             }}
           />
-          {/* Overlay for readability - lighter earth tones */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[#8b7355]/85 via-[#6b5444]/80 to-[#5c4033]/85" />
+          {/* Overlay: 55-60% keeps text readable while letting image breathe */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#6b4530]/60 via-[#4a2e1c]/55 to-[#3a2416]/60" />
         </>
       ) : (
         /* Fallback: Lighter earth-tone gradient */
@@ -59,10 +59,10 @@ export const SoilBackground = () => {
         transition={{ duration: 2.5 }}
         className="absolute top-[12%] -left-[3%] -rotate-[8deg] text-[clamp(80px,15vw,180px)] font-black tracking-tighter leading-none"
         style={{
-          color: 'rgba(139, 115, 85, 0.12)',
-          textShadow: '0 2px 20px rgba(0,0,0,0.1)',
+          color: 'rgba(199, 144, 22, 0.22)',
+          textShadow: '0 4px 32px rgba(0,0,0,0.2)',
           fontFamily: 'system-ui, -apple-system, sans-serif',
-          WebkitTextStroke: '1px rgba(139, 115, 85, 0.08)'
+          WebkitTextStroke: '1.5px rgba(199, 144, 22, 0.15)'
         }}
       >
         SAVE OUR SOIL
@@ -74,17 +74,17 @@ export const SoilBackground = () => {
         transition={{ duration: 3 }}
         className="absolute bottom-[10%] -right-[5%] rotate-[5deg] text-[clamp(80px,15vw,180px)] font-black tracking-tighter leading-none"
         style={{
-          color: 'rgba(139, 115, 85, 0.12)',
-          textShadow: '0 2px 20px rgba(0,0,0,0.1)',
+          color: 'rgba(199, 144, 22, 0.22)',
+          textShadow: '0 4px 32px rgba(0,0,0,0.2)',
           fontFamily: 'system-ui, -apple-system, sans-serif',
-          WebkitTextStroke: '1px rgba(139, 115, 85, 0.08)'
+          WebkitTextStroke: '1.5px rgba(199, 144, 22, 0.15)'
         }}
       >
         SAVE OUR SOIL
       </motion.div>
 
       {/* Gentle Vignette for depth */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/10" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/12" />
       
       {/* Warm Center Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100vw] h-[100vw] bg-[#c79016]/8 blur-[180px] rounded-full" />

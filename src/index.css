@@ -272,4 +272,18 @@ h3,
   color: var(--cream);
   border-radius: 1.25rem;
   border: 1px solid rgba(255, 248, 239, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.32);
+}
+
+@keyframes scan-line {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(350%); }
+}
+
+.glass-panel {
+  background: linear-gradient(180deg, rgba(255, 248, 239, 0.20) 0%, rgba(255, 248, 239, 0.11) 100%) !important;
+}
+
+.glass-card {
+  background: linear-gradient(180deg, rgba(255, 248, 239, 0.18) 0%, rgba(255, 248, 239, 0.10) 100%) !important;
 }
