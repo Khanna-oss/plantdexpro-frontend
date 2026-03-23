@@ -10,6 +10,8 @@ import { compressImage } from './utils/imageHelper.js';
 import { motion } from 'framer-motion';
 import { XCircle, History, Leaf } from 'lucide-react';
 import { SoilBackground } from './components/SoilBackground.jsx';
+import { GlobeEnvironmental } from './components/GlobeEnvironmental.jsx';
+import { ResearchDataCards } from './components/ResearchDataCards.jsx';
 
 const MILESTONE_1 = 'Extracting botanical features...';
 const MILESTONE_2 = 'Verifying species profile...';
@@ -88,10 +90,12 @@ const App = () => {
     <div className={`min-h-screen flex flex-col relative transition-colors duration-500 ${theme}`}>
       <SoilBackground />
       <Header theme={theme} toggleTheme={toggleTheme} />
-      
+
       <main className="flex-grow w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 relative z-10">
+
+        {/* Hero */}
         <div className="max-w-3xl mx-auto text-center mb-14">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="flex items-center justify-center gap-3 mb-5"
@@ -103,7 +107,7 @@ const App = () => {
               PlantDexPro
             </h1>
           </motion.div>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
@@ -121,27 +125,30 @@ const App = () => {
           </motion.p>
         </div>
 
+        {/* Upload */}
         <div className="max-w-xl mx-auto relative z-10 mb-20">
-          <ImageUploader 
-            onIdentify={handleIdentify} 
-            isLoading={isLoading} 
+          <ImageUploader
+            onIdentify={handleIdentify}
+            isLoading={isLoading}
             loadingMessage={inferenceMessage}
-            onClear={handleClear} 
-            onPreview={setImagePreview} 
+            onClear={handleClear}
+            onPreview={setImagePreview}
           />
         </div>
 
+        {/* Loading */}
         {isLoading && (
-           <div className="flex justify-center py-12">
-             <Spinner message={inferenceMessage} />
-           </div>
+          <div className="flex justify-center py-12">
+            <Spinner message={inferenceMessage} />
+          </div>
         )}
 
+        {/* Error */}
         {error && !isLoading && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="max-w-2xl mx-auto glass-panel border border-rose-400/20" 
+            className="max-w-2xl mx-auto glass-panel border border-rose-400/20"
             role="alert"
           >
             <div className="flex items-start gap-4 mb-4">
@@ -153,7 +160,6 @@ const App = () => {
                 <p className="text-sm text-rose-300/80">{error}</p>
               </div>
             </div>
-            
             <div className="bg-[var(--golden-soil)]/10 rounded-xl p-4 border border-[var(--golden-soil)]/20">
               <h4 className="text-xs font-black uppercase tracking-wider text-[var(--golden-soil)] mb-3">Tips for Better Results</h4>
               <ul className="space-y-2 text-xs text-[var(--cream)]/70">
@@ -182,42 +188,62 @@ const App = () => {
           </motion.div>
         )}
 
+        {/* Results */}
         {!isLoading && results.length > 0 && (
           <div className="w-full">
             <ResultsDisplay results={results} imagePreview={imagePreview} onNewScan={handleClear} />
           </div>
         )}
 
+        {/* History */}
         {!isLoading && results.length === 0 && history.length > 0 && (
           <div className="max-w-5xl mx-auto mt-24">
             <div className="flex items-center gap-3 mb-6 text-[var(--golden-soil)]/80 uppercase text-[9px] font-black tracking-[0.35em]">
-               <History size={14} /> Recent Discoveries
+              <History size={14} /> Recent Discoveries
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-               {history.map((item, i) => (
-                  <motion.div 
-                    key={i}
-                    whileHover={{ y: -5 }}
-                    className="glass-card overflow-hidden group cursor-default"
-                  >
-                      <div className="h-40 bg-black/20 relative overflow-hidden rounded-t-[16px]">
-                         {item.image && (
-                           <img 
-                             src={item.image} 
-                             className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" 
-                             alt={item.name} 
-                           />
-                         )}
-                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                      </div>
-                      <div className="p-4">
-                         <p className="font-black text-xs truncate text-[var(--cream)] uppercase tracking-tight">{item.name}</p>
-                         <p className="text-[9px] text-body-muted font-bold">{item.date}</p>
-                      </div>
-                  </motion.div>
-               ))}
+              {history.map((item, i) => (
+                <motion.div
+                  key={i}
+                  whileHover={{ y: -5 }}
+                  className="glass-card overflow-hidden group cursor-default"
+                >
+                  <div className="h-40 bg-black/20 relative overflow-hidden rounded-t-[16px]">
+                    {item.image && (
+                      <img
+                        src={item.image}
+                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+                        alt={item.name}
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  </div>
+                  <div className="p-4">
+                    <p className="font-black text-xs truncate text-[var(--cream)] uppercase tracking-tight">{item.name}</p>
+                    <p className="text-[9px] text-body-muted font-bold">{item.date}</p>
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </div>
+        )}
+
+        {/* === PHASE 5: Environmental Intelligence Layer === */}
+        {!isLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="max-w-3xl mx-auto mt-20"
+          >
+            <div className="flex items-center gap-3 mb-5 text-[var(--golden-soil)]/80 uppercase text-[9px] font-black tracking-[0.35em]">
+              <Leaf size={14} /> Environmental Intelligence
+            </div>
+            <GlobeEnvironmental />
+            <div className="mt-6">
+              <ResearchDataCards />
+            </div>
+          </motion.div>
         )}
 
       </main>
