@@ -468,9 +468,9 @@ User Logout:
    - Animated progress dots (active dot pulses, completed dots filled)
    - Timed at +2.8 s / +5.2 s from identification start
 
-### Bundle Size (Post Phase 4)
-- **Total**: ~614 KB (171 KB gzipped)
-- **CSS**: ~44.5 KB (9.2 KB gzipped)
+### Bundle Size (Post Phase 5)
+- **Total**: ~644 KB (178 KB gzipped)
+- **CSS**: ~45 KB (9.3 KB gzipped)
 - **HTML**: ~1.6 KB (0.75 KB gzipped)
 
 ### Browser Support
@@ -535,7 +535,7 @@ npm run test:coverage # Coverage report
 
 ---
 
-## Completed Enhancements (Phases 1–4)
+## Completed Enhancements (Phases 1–5)
 
 | Phase | Deliverable | Key Files |
 |-------|-------------|-----------|
@@ -550,17 +550,21 @@ npm run test:coverage # Coverage report
 | Phase 4 | Scan Again CTA action bar (`onNewScan` prop) | `ResultsDisplay.jsx`, `App.jsx` |
 | Phase 4 | Dynamic geographic/conservation text from plant data | `ResultsDisplay.jsx` |
 | Phase 4 | Visual bridge gradient between green card and dark HUD | `ResultsDisplay.jsx` |
+| Phase 5 | Rotating canvas globe with lat/lon grid + GPS pin | `GlobeEnvironmental.jsx` |
+| Phase 5 | 7 environmental metric chips (Air, Forest, Temp, Carbon, Bio, Precip, Satellite) | `GlobeEnvironmental.jsx` |
+| Phase 5 | `ResearchDataCards` wired into App below results/history | `App.jsx` |
+| Phase 6 | README phase log, feature list, env var table updated | `README.md` |
+| Phase 6 | SYSTEM_ARCHITECTURE completed table, key features, nutrition/XAI docs | `SYSTEM_ARCHITECTURE.md` |
 
 ## Future Enhancements
 
-1. **3D Globe Environmental Layer** (Phase 5 — Optional)
-2. **Mobile App**: React Native version
-3. **Offline Mode**: Service workers for PWA
-4. **AR Integration**: Camera overlay for real-time identification
-5. **Community Features**: User-submitted plant photos
-6. **Advanced Analytics**: ML-based trend analysis
-7. **Multi-language**: i18n support
-8. **Export Reports**: PDF generation for research data
+1. **Mobile App**: React Native version
+2. **Offline Mode**: Service workers for PWA
+3. **AR Integration**: Camera overlay for real-time identification
+4. **Community Features**: User-submitted plant photos
+5. **Advanced Analytics**: ML-based trend analysis
+6. **Multi-language**: i18n support
+7. **Export Reports**: PDF generation for research data
 
 ---
 
@@ -574,4 +578,4 @@ npm run test:coverage # Coverage report
 
 ---
 
-*Last Updated: March 2026 — Phases 1–4 Complete*
+*Last Updated: March 2026 — Phases 1–5 Complete · All Master Plan Phases Delivered*

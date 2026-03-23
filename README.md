@@ -36,8 +36,8 @@ A comprehensive MCA research project integrating plant identification AI with re
 | **Phase 2** | Sci-fi XAI bento HUD — SVG arc gauge, SHAP bars, CRT overlay | ✅ Complete | `d818f88` |
 | **Phase 3** | Clean loading state, background visibility, `@keyframes` CSS fix | ✅ Complete | `0be852d` |
 | **Phase 4** | Multi-candidate selector, Scan Again CTA, dynamic geo/conservation text | ✅ Complete | `afaafd2` |
-| **Phase 5** | Optional 3D globe environmental layer | ⏳ Optional | — |
-| **Phase 6** | Documentation and submission pack | 🔄 In progress | — |
+| **Phase 5** | Rotating canvas globe + 7 env metric chips, `ResearchDataCards` wired to App | ✅ Complete | `6dd4707` |
+| **Phase 6** | Documentation and submission pack — README + SYSTEM_ARCHITECTURE updated | ✅ Complete | `5d8eeea` |
 
 ---
 
@@ -79,6 +79,7 @@ A comprehensive MCA research project integrating plant identification AI with re
 - **XAI Bento HUD**: Sci-fi dark panel with CRT scan-line overlay, SVG radial arc gauge, animated SHAP/LIME bars, neon-green `#CCFF00` accents
 - **Milestone Loading**: 3-step inference progress with crossfade messages and animated dots
 - **Multi-Candidate Selector**: Compare all AI-returned plant candidates in a pill tab row
+- **Environmental Globe**: Rotating canvas globe (zero deps) with real GPS pin, 7 env metric chips — `GlobeEnvironmental.jsx`
 - **Animations**: Framer Motion smooth transitions with `AnimatePresence`
 - **Responsive**: Mobile-first design with Tailwind CSS
 
