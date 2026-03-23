@@ -28,6 +28,19 @@ A comprehensive MCA research project integrating plant identification AI with re
 
 ---
 
+## ✅ Development Phase Log
+
+| Phase | Description | Status | Commit |
+|-------|-------------|--------|--------|
+| **Phase 1** | Truthful nutrition pipeline, env wiring fix, mobile API key fix | ✅ Complete | `1d8edab` |
+| **Phase 2** | Sci-fi XAI bento HUD — SVG arc gauge, SHAP bars, CRT overlay | ✅ Complete | `d818f88` |
+| **Phase 3** | Clean loading state, background visibility, `@keyframes` CSS fix | ✅ Complete | `0be852d` |
+| **Phase 4** | Multi-candidate selector, Scan Again CTA, dynamic geo/conservation text | ✅ Complete | `afaafd2` |
+| **Phase 5** | Optional 3D globe environmental layer | ⏳ Optional | — |
+| **Phase 6** | Documentation and submission pack | 🔄 In progress | — |
+
+---
+
 ## ✨ Features
 
 ### 🔬 Core Functionality
@@ -56,13 +69,17 @@ A comprehensive MCA research project integrating plant identification AI with re
 - **Botanical Data**: Trefle API integration for taxonomy and growth info
 - **Wikipedia Summaries**: Educational plant information
 - **Video Tutorials**: YouTube recipe and care videos
-- **Nutritional Analysis**: Detailed nutrition for edible plants
+- **Nutritional Analysis**: Truthful 3-tier pipeline — ETL data warehouse → USDA FoodData Central API → honest null (no AI fabrication)
 
 ### 🎨 UI/UX
-- **Save Soil Theme**: Earth-tone color palette (maroon, coffee, soil)
-- **Dynamic Backgrounds**: Unsplash nature photography rotation
-- **Glassmorphism**: Modern translucent card designs
-- **Animations**: Framer Motion smooth transitions
+- **Save Soil Theme**: Earth-tone color palette (maroon, coffee, soil) with `rgba(199,144,22)` golden accents
+- **Dynamic Backgrounds**: Unsplash nature photography at 60% overlay for visibility
+- **SAVE OUR SOIL Watermarks**: Golden-tone diagonal background marks
+- **Glassmorphism**: Biomorphic translucent card designs (`soil-shell`, `glass-panel`)
+- **XAI Bento HUD**: Sci-fi dark panel with CRT scan-line overlay, SVG radial arc gauge, animated SHAP/LIME bars, neon-green `#CCFF00` accents
+- **Milestone Loading**: 3-step inference progress with crossfade messages and animated dots
+- **Multi-Candidate Selector**: Compare all AI-returned plant candidates in a pill tab row
+- **Animations**: Framer Motion smooth transitions with `AnimatePresence`
 - **Responsive**: Mobile-first design with Tailwind CSS
 
 ---
@@ -210,8 +227,11 @@ VITE_UNSPLASH_ACCESS_KEY=your_unsplash_access_key_here
 | Firebase | ✅ Yes | Yes | [console.firebase.google.com](https://console.firebase.google.com/) |
 | Trefle | ❌ No | 120/day | [trefle.io](https://trefle.io/) |
 | Unsplash | ❌ No | 50/hour | [unsplash.com/developers](https://unsplash.com/developers) |
+| USDA FoodData | ❌ No | `DEMO_KEY` built-in | [fdc.nal.usda.gov](https://fdc.nal.usda.gov/api-guide.html) |
 
 **Note**: The 7 environmental research APIs (OpenAQ, GFW, NASA, etc.) are **free and require no API keys**.
+
+> ⚠️ **Vercel Deployment**: All `VITE_` prefixed variables **must** be set in the Vercel dashboard under Project Settings → Environment Variables. Variables in `.env` files are NOT read by Vercel at build time.
 
 ---
 
@@ -501,13 +521,17 @@ For issues, questions, or suggestions:
 
 ## 🌟 Features Roadmap
 
+- [x] Truthful ETL-verified nutrition pipeline (Phase 1)
+- [x] Sci-fi XAI bento HUD with SVG arc confidence gauge (Phase 2)
+- [x] Clean milestone-based loading states (Phase 3)
+- [x] Multi-candidate result selector (Phase 4)
+- [ ] 3D globe environmental layer (Phase 5)
 - [ ] Mobile app (React Native)
 - [ ] Offline mode (PWA)
 - [ ] AR plant identification
 - [ ] Community plant submissions
 - [ ] Multi-language support
 - [ ] PDF report generation
-- [ ] Advanced analytics dashboard
 
 ---
 

@@ -61,11 +61,13 @@ PlantDexPro is a comprehensive plant identification and environmental research p
 ### Key Features
 1. **AI Plant Identification** - Gemini 3 Flash model for accurate species recognition
 2. **Verification System** - Local database cross-referencing for accuracy
-3. **Nutritional Analysis** - Edibility and nutritional information for food plants
+3. **Nutritional Analysis** - Truthful 3-tier pipeline: ETL warehouse → USDA FoodData Central → honest null
 4. **Environmental Context** - 7 research modules providing atmospheric, ecological, and climate data
 5. **User Personalization** - Authentication, history tracking, and favorites
-6. **Feedback Loop** - User corrections to improve AI accuracy
-7. **Educational Enrichment** - Wikipedia summaries, botanical data, and video tutorials
+6. **XAI Bento HUD** - Sci-fi dark panel: SVG radial arc gauge, SHAP/LIME bars, CRT overlay, neon `#CCFF00` accents
+7. **Multi-Candidate Selector** - Compare all AI-returned candidates with per-plant confidence
+8. **Feedback Loop** - User corrections to improve AI accuracy
+9. **Educational Enrichment** - Wikipedia summaries, botanical data, and video tutorials
 
 ---
 
@@ -157,6 +159,38 @@ PlantDexPro is a comprehensive plant identification and environmental research p
 - Visual feature extraction for XAI
 - Verification status tracking
 - History saving to localStorage
+- `nutritionVerified` + `nutritionSource` propagated to plant object for UI provenance badges
+
+### 1a. Truthful Nutrition Pipeline (Phase 1)
+**Files**: `src/services/etlNutritionService.js`, `src/services/ainutritionlookup.js`
+
+**3-Tier Lookup**:
+```
+Tier 1 — ETL Data Warehouse
+  28 species with USDA/botanical reference values
+  5-tier name matching: exact sci name → genus → common alias → substring
+
+Tier 2 — USDA FoodData Central API
+  Free DEMO_KEY built-in; optional VITE_USDA_API_KEY for production quota
+  24-hour localStorage cache with TTL
+
+Tier 3 — Honest null
+  Returns null — no AI fabrication, no placeholder filler
+  UI shows "Verified nutrition data unavailable"
+```
+
+**Forbidden**: AI-generated nutrition values (removed Phase 1 to prevent hallucination)
+
+### 1b. XAI Bento HUD (Phase 2)
+**File**: `src/components/ResultsDisplay.jsx` (XAI section)
+
+**Components**:
+- **CRT scan-line overlay**: `repeating-linear-gradient` with `rgba(204,255,0,0.012)` lines
+- **Terminal boot header**: blinking `#CCFF00` status dot + `XAI_ENGINE · v3.0 · ONLINE`
+- **SVG radial arc gauge**: animated `strokeDashoffset` drawing to confidence %
+- **12-col bento grid**: 7-col confidence hero + 3-row stat tiles (Latency / Source / Model)
+- **SHAP/LIME bars**: staggered entry, glow blur on primary, `★ PRIMARY` tag
+- **Save Soil footer**: `SAVE_SOIL · XAI v3.0` brand mark
 
 ### 2. Verification System
 **File**: `src/services/plantVerificationService.js`
@@ -428,14 +462,15 @@ User Logout:
    - Promise.all for enrichment
    - Promise.allSettled for research data
 
-5. **Loading States**: 
-   - Shimmer animations
-   - Progressive enhancement
-   - Non-blocking UI
+5. **Loading States** (Phase 3):
+   - 3-milestone inference messages: Extracting → Verifying → Enriching
+   - `AnimatePresence` crossfade between milestone messages
+   - Animated progress dots (active dot pulses, completed dots filled)
+   - Timed at +2.8 s / +5.2 s from identification start
 
-### Bundle Size
-- **Total**: ~598 KB (165 KB gzipped)
-- **CSS**: ~42 KB (9 KB gzipped)
+### Bundle Size (Post Phase 4)
+- **Total**: ~614 KB (171 KB gzipped)
+- **CSS**: ~44.5 KB (9.2 KB gzipped)
 - **HTML**: ~1.6 KB (0.75 KB gzipped)
 
 ### Browser Support
@@ -500,15 +535,32 @@ npm run test:coverage # Coverage report
 
 ---
 
+## Completed Enhancements (Phases 1–4)
+
+| Phase | Deliverable | Key Files |
+|-------|-------------|-----------|
+| Phase 1 | Truthful nutrition pipeline (ETL → USDA → null) | `etlNutritionService.js`, `ainutritionlookup.js` |
+| Phase 1 | Env wiring fix (`VITE_GEMINI_API_KEY` → `process.env.API_KEY`) | `vite.config.js` |
+| Phase 2 | Sci-fi XAI bento HUD with SVG arc gauge + SHAP bars | `ResultsDisplay.jsx` |
+| Phase 2 | Milestone loading Spinner with `AnimatePresence` | `Spinner.jsx`, `App.jsx` |
+| Phase 3 | Background overlay 85%→60%, golden watermarks | `SoilBackground.jsx` |
+| Phase 3 | Fixed unclosed CSS rule + missing `@keyframes scan-line` | `index.css` |
+| Phase 3 | Removed Stage 1/2 fallback text from button | `ImageUploader.jsx` |
+| Phase 4 | Multi-candidate pill selector | `ResultsDisplay.jsx` |
+| Phase 4 | Scan Again CTA action bar (`onNewScan` prop) | `ResultsDisplay.jsx`, `App.jsx` |
+| Phase 4 | Dynamic geographic/conservation text from plant data | `ResultsDisplay.jsx` |
+| Phase 4 | Visual bridge gradient between green card and dark HUD | `ResultsDisplay.jsx` |
+
 ## Future Enhancements
 
-1. **Mobile App**: React Native version
-2. **Offline Mode**: Service workers for PWA
-3. **AR Integration**: Camera overlay for real-time identification
-4. **Community Features**: User-submitted plant photos
-5. **Advanced Analytics**: ML-based trend analysis
-6. **Multi-language**: i18n support
-7. **Export Reports**: PDF generation for research data
+1. **3D Globe Environmental Layer** (Phase 5 — Optional)
+2. **Mobile App**: React Native version
+3. **Offline Mode**: Service workers for PWA
+4. **AR Integration**: Camera overlay for real-time identification
+5. **Community Features**: User-submitted plant photos
+6. **Advanced Analytics**: ML-based trend analysis
+7. **Multi-language**: i18n support
+8. **Export Reports**: PDF generation for research data
 
 ---
 
@@ -522,4 +574,4 @@ npm run test:coverage # Coverage report
 
 ---
 
-*Last Updated: March 2026*
+*Last Updated: March 2026 — Phases 1–4 Complete*
