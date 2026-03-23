@@ -74,10 +74,11 @@ const AccordionSection = ({ title, icon: Icon, children, defaultOpen = false }) 
   );
 };
 
-export const ResultsDisplay = ({ results, imagePreview }) => {
+export const ResultsDisplay = ({ results, imagePreview, onNewScan }) => {
+  const [activeIdx, setActiveIdx] = useState(0);
   if (!results || results.length === 0) return null;
 
-  const plant = results[0];
+  const plant = results[activeIdx] || results[0];
   
   // PHASE 2: Enhanced verification and provenance tracking
   const verificationStatus = plant.verificationStatus || 'unverified';
@@ -159,6 +160,33 @@ export const ResultsDisplay = ({ results, imagePreview }) => {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* --- PHASE 4: Multi-Candidate Selector --- */}
+          {results.length > 1 && (
+            <div className="px-6 pb-4">
+              <p className="text-[8px] font-black uppercase tracking-[0.3em] text-[#1b5e20]/50 mb-2">AI Candidates — Select to Compare</p>
+              <div className="flex flex-wrap gap-2">
+                {results.map((r, i) => {
+                  const c = resolveConfidence(r);
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => setActiveIdx(i)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wide border transition-all ${
+                        i === activeIdx
+                          ? 'bg-[#1b5e20] text-white border-[#1b5e20] shadow-sm'
+                          : 'bg-white/40 text-[#1b5e20] border-[#1b5e20]/20 hover:bg-[#1b5e20]/10'
+                      }`}
+                    >
+                      <span className="w-4 h-4 rounded-full bg-current opacity-20 inline-flex items-center justify-center text-[9px] font-black" style={{color: 'inherit', opacity: 1}}>{i + 1}</span>
+                      <span className="truncate max-w-[120px]">{r.commonName || r.scientificName || `Candidate ${i+1}`}</span>
+                      <span className="text-[9px] opacity-60">{c}%</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -296,13 +324,18 @@ export const ResultsDisplay = ({ results, imagePreview }) => {
             {/* Geographic & Conservation */}
             <AccordionSection title="Geographic Distribution" icon={MapPin}>
               <p className="font-bold text-[#1D3B23]">
-                Indigenous to specific ecological zones. Thrives in temperate to tropical climates with adequate organic soil composition. Part of the Save Soil botanical conservation initiative.
+                {plant.habitat
+                  || (plant.trefleEnrichment?.distribution?.native?.length > 0
+                      ? `Native to: ${plant.trefleEnrichment.distribution.native.join(', ')}.`
+                      : `${plant.commonName || 'This species'} is distributed across varied ecological zones. Habitat data will be enriched as the research dataset expands.`)}
               </p>
             </AccordionSection>
 
             <AccordionSection title="Conservation & Fun Facts" icon={History}>
               <p className="font-bold text-[#1D3B23]">
-                {plant.funFact || 'This species is documented as part of ongoing botanical conservation efforts. Maintained within the Save Soil research repository for future academic study.'}
+                {plant.funFact
+                  || plant.botanicalData?.funFact
+                  || `${plant.commonName || 'This species'} is indexed in the Save Soil botanical conservation repository. Verified records help build a living plant intelligence layer for ecological research.`}
               </p>
             </AccordionSection>
 
@@ -405,6 +438,10 @@ export const ResultsDisplay = ({ results, imagePreview }) => {
               </div>
             </div>
           )}
+
+          {/* --- PHASE 4: Visual Bridge green → dark --- */}
+          <div className="mx-6 mb-2 h-px bg-gradient-to-r from-transparent via-[#1b5e20]/20 to-transparent" />
+          <div className="mx-6 mb-5 h-6 rounded-b-xl" style={{ background: 'linear-gradient(to bottom, rgba(165,214,167,0.12), transparent)' }} />
 
           {/* --- XAI BENTO HUD — PHASE 2 SCI-FI REDESIGN --- */}
           <div className="px-6 pb-6">
@@ -598,7 +635,33 @@ export const ResultsDisplay = ({ results, imagePreview }) => {
             </div>
           </div>
 
-        </div>
+        </div>{/* end result-panel */}
+
+        {/* --- PHASE 4: Scan Again Action Bar --- */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.4 }}
+          className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 soil-shell px-5 py-4"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-[var(--golden-soil)]/15 border border-[var(--golden-soil)]/20 flex items-center justify-center">
+              <Leaf size={16} className="text-[var(--golden-soil)]" />
+            </div>
+            <div>
+              <p className="text-xs font-black text-[var(--cream)] uppercase tracking-wide">Identification Complete</p>
+              <p className="text-[9px] text-body-muted">Save Soil Research Engine · {new Date().toLocaleDateString()}</p>
+            </div>
+          </div>
+          {onNewScan && (
+            <button
+              onClick={onNewScan}
+              className="glass-button px-5 py-2.5 text-xs font-black uppercase tracking-wider flex items-center gap-2 whitespace-nowrap"
+            >
+              <span>🌿</span> Scan Another Plant
+            </button>
+          )}
+        </motion.div>
       </motion.div>
     </div>
   );

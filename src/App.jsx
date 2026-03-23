@@ -184,7 +184,7 @@ const App = () => {
 
         {!isLoading && results.length > 0 && (
           <div className="w-full">
-            <ResultsDisplay results={results} imagePreview={imagePreview} />
+            <ResultsDisplay results={results} imagePreview={imagePreview} onNewScan={handleClear} />
           </div>
         )}
 
