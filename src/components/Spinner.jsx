@@ -1,14 +1,22 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
+import { Leaf } from 'lucide-react';
 
 export const Spinner = ({ message }) => {
   return (
-    <div className="soil-shell flex flex-col items-center justify-center gap-4 px-8 py-6 text-center max-w-2xl mx-auto relative overflow-hidden">
+    <div className="soil-shell flex flex-col items-center justify-center gap-5 px-10 py-8 text-center max-w-sm mx-auto relative overflow-hidden">
       <div className="texture-overlay" />
-      <Loader2 className="animate-spin h-12 w-12 text-[var(--golden-soil)] relative z-10" />
-      <div className="relative z-10 space-y-2">
-        <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[var(--golden-soil)]">Inference Lifecycle</p>
-        <p className="text-base md:text-lg font-semibold text-[var(--cream)]">{message || 'Stage 1: Feature Extraction & Scalar Value Mapping...'}</p>
+      <div className="relative z-10 w-16 h-16 flex items-center justify-center">
+        <div className="absolute inset-0 rounded-full border-2 border-[var(--golden-soil)]/20 animate-ping" style={{ animationDuration: '1.8s' }} />
+        <div className="absolute inset-1 rounded-full border border-[var(--golden-soil)]/40 animate-spin" style={{ animationDuration: '2.5s', borderTopColor: 'var(--golden-soil)' }} />
+        <Leaf size={24} className="text-[var(--golden-soil)] relative z-10" />
+      </div>
+      <div className="relative z-10">
+        <p className="text-sm font-semibold text-[var(--cream)] leading-relaxed">
+          {message || 'Analyzing Botanical Specimen...'}
+        </p>
+        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[var(--golden-soil)]/50 mt-1.5">
+          Save Soil Research Engine
+        </p>
       </div>
     </div>
   );

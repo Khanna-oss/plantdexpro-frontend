@@ -89,14 +89,15 @@ export const plantDexService = {
           })) || []
         };
         
-        // Trigger enriched nutrition data for edible species (if not already from verified DB)
+        // Truthful nutrition lookup — ETL warehouse → USDA API → honest null
         if (p.isEdible && !p.nutrients) {
-          const tags = p.visualFeatures?.map(f => f.reason) || [];
-          const nutrition = await aiNutritionLookup.fetchNutrition(p.commonName, p.scientificName, tags);
+          const nutrition = await aiNutritionLookup.fetchNutrition(p.commonName, p.scientificName);
           if (nutrition) {
             p.nutrients = nutrition.nutrients;
             p.botanicalData = { ...p.botanicalData, ...nutrition.botanicalData };
             p.healthHints = nutrition.healthHints;
+            p.nutritionVerified = nutrition.isVerified === true;
+            p.nutritionSource = nutrition.source || 'External API';
           }
         }
         

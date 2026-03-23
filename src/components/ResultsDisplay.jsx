@@ -92,6 +92,8 @@ export const ResultsDisplay = ({ results, imagePreview }) => {
   const nutrients = plant.nutrients || {};
   const botanicalData = plant.botanicalData || {};
   const healthHints = plant.healthHints || [];
+  const etlVerified = plant.nutritionVerified === true || isVerified;
+  const nutritionSource = plant.nutritionSource || (isVerified ? 'ETL Data Warehouse' : null);
 
   const nutrientFields = [
     { label: 'Vitamins', icon: '💊', value: nutrients.vitamins },

@@ -11,9 +11,7 @@ import { motion } from 'framer-motion';
 import { XCircle, History, Leaf } from 'lucide-react';
 import { SoilBackground } from './components/SoilBackground.jsx';
 
-const INFERENCE_STAGE_ONE = 'Stage 1: Feature Extraction & Scalar Value Mapping...';
-const INFERENCE_STAGE_TWO = 'Stage 2: Reconciling Stacking Ensembles (CatBoost + KNN)...';
-const INFERENCE_STAGE_THREE = 'Stage 3: Locking final values and rendering the XAI Bento Grid...';
+const ANALYZING_MESSAGE = 'Analyzing Botanical Specimen...';
 
 const App = () => {
   const [theme, toggleTheme] = useDarkMode();
@@ -44,13 +42,8 @@ const App = () => {
     setIsLoading(true);
     setError(null);
     setResults([]);
-    setInferenceMessage(INFERENCE_STAGE_ONE);
-
-    const stageTwoTimer = window.setTimeout(() => {
-      setInferenceMessage(INFERENCE_STAGE_TWO);
-    }, 1500);
-
-    window.__plantDexInferenceTimers = [stageTwoTimer];
+    setInferenceMessage(ANALYZING_MESSAGE);
+    window.__plantDexInferenceTimers = [];
 
     try {
       const objectUrl = URL.createObjectURL(file);
@@ -65,8 +58,7 @@ const App = () => {
         throw new Error("No plants identified. Try a clearer image.");
       }
 
-      setInferenceMessage(INFERENCE_STAGE_THREE);
-      await new Promise(resolve => window.setTimeout(resolve, 300));
+      await new Promise(resolve => window.setTimeout(resolve, 100));
       setResults(data.plants);
       setHistory(plantDexService.getHistory());
 
