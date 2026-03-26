@@ -154,6 +154,60 @@ const checkVerificationStatus = (scientificName, commonName) => {
 };
 
 /**
+ * Inspect reference signals without mutating the AI result.
+ */
+export const inspectReferenceSignals = (aiResult) => {
+  if (!aiResult || !aiResult.scientificName) {
+    return {
+      retrievalSource: 'none',
+      retrievalConfidence: 0,
+      hasReferenceSignal: false,
+      matchTier: 'none',
+      matchCandidate: null,
+      cacheStatus: {
+        isVerified: false,
+        count: 0,
+        avgConfidence: 0,
+        source: 'none'
+      },
+      verifiedCatalogSize: getVerifiedPlants().length
+    };
+  }
+
+  const verifiedMatch = findVerifiedMatch(aiResult.scientificName, aiResult.commonName);
+  const cacheStatus = checkVerificationStatus(aiResult.scientificName, aiResult.commonName);
+  const matchTier = verifiedMatch?.matchScore >= 85
+    ? 'strong'
+    : verifiedMatch?.matchScore >= 70
+      ? 'partial'
+      : 'none';
+
+  return {
+    retrievalSource: verifiedMatch
+      ? 'verified_database'
+      : cacheStatus.isVerified
+        ? 'verification_cache'
+        : 'none',
+    retrievalConfidence: verifiedMatch?.matchScore || cacheStatus.avgConfidence || 0,
+    hasReferenceSignal: Boolean(verifiedMatch || cacheStatus.isVerified),
+    matchTier,
+    matchCandidate: verifiedMatch
+      ? {
+          scientificName: verifiedMatch.scientificName,
+          commonName: verifiedMatch.commonNames?.[0] || aiResult.commonName,
+          family: verifiedMatch.family,
+          isEdible: verifiedMatch.isEdible,
+          conservationStatus: verifiedMatch.conservationStatus,
+          verificationLevel: verifiedMatch.verificationLevel,
+          matchScore: verifiedMatch.matchScore
+        }
+      : null,
+    cacheStatus,
+    verifiedCatalogSize: getVerifiedPlants().length
+  };
+};
+
+/**
  * Main verification function - enriches AI result with verified data
  */
 export const verifyPlantIdentification = (aiResult) => {
@@ -308,6 +362,7 @@ export const clearVerificationCache = () => {
 };
 
 export const plantVerificationService = {
+  inspectReferenceSignals,
   verifyPlantIdentification,
   checkVerificationStatus,
   updateVerificationCache,

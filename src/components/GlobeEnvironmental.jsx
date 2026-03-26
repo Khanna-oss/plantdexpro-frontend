@@ -6,7 +6,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Wind, TreePine, Thermometer, Zap, Leaf, CloudRain, Satellite } from 'lucide-react';
+import { MapPin, Wind, TreePine, Thermometer, Zap, Leaf, CloudRain, Satellite, FlaskConical, Sun } from 'lucide-react';
 import { geolocationService } from '../services/geolocationService.js';
 import { environmentalResearchService } from '../services/environmentalResearchService.js';
 
@@ -53,7 +53,7 @@ function drawGlobe(ctx, rotAngle, lat, lon) {
     const xr = Math.abs(r * Math.cos(latRad));
     ctx.beginPath();
     ctx.ellipse(cx, yPos, xr, xr * 0.12, 0, 0, Math.PI * 2);
-    ctx.strokeStyle = latDeg === 0 ? 'rgba(204,255,0,0.22)' : 'rgba(204,255,0,0.1)';
+    ctx.strokeStyle = latDeg === 0 ? 'rgba(0,255,65,0.22)' : 'rgba(0,255,65,0.1)';
     ctx.lineWidth = latDeg === 0 ? 0.9 : 0.55;
     ctx.stroke();
   });
@@ -67,7 +67,7 @@ function drawGlobe(ctx, rotAngle, lat, lon) {
     if (xScale > 0.05) {
       ctx.beginPath();
       ctx.ellipse(cx, cy, r * xScale, r, 0, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(204,255,0,${0.04 + xScale * 0.1})`;
+      ctx.strokeStyle = `rgba(0,255,65,${0.04 + xScale * 0.1})`;
       ctx.lineWidth = 0.55;
       ctx.stroke();
     }
@@ -89,8 +89,8 @@ function drawGlobe(ctx, rotAngle, lat, lon) {
 
       const glowR = 15 * alpha;
       const glowGrad = ctx.createRadialGradient(px, py, 0, px, py, glowR);
-      glowGrad.addColorStop(0, `rgba(204,255,0,${alpha * 0.9})`);
-      glowGrad.addColorStop(0.4, `rgba(204,255,0,${alpha * 0.3})`);
+      glowGrad.addColorStop(0, `rgba(0,255,65,${alpha * 0.9})`);
+      glowGrad.addColorStop(0.4, `rgba(0,255,65,${alpha * 0.3})`);
       glowGrad.addColorStop(1, 'transparent');
       ctx.beginPath();
       ctx.arc(px, py, glowR, 0, Math.PI * 2);
@@ -99,7 +99,7 @@ function drawGlobe(ctx, rotAngle, lat, lon) {
 
       ctx.beginPath();
       ctx.arc(px, py, 3.2 * alpha, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(204,255,0,${alpha})`;
+      ctx.fillStyle = `rgba(0,255,65,${alpha})`;
       ctx.fill();
     }
   }
@@ -137,8 +137,8 @@ const MetricChip = ({ icon: Icon, label, value, status, loading }) => {
 
   return (
     <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-white/8 bg-white/4 hover:bg-white/6 transition-colors">
-      <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 border border-[rgba(204,255,0,0.15)]" style={{ background: 'rgba(204,255,0,0.07)' }}>
-        <Icon size={13} className="text-[#CCFF00]" />
+      <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 border border-[rgba(0,255,65,0.15)]" style={{ background: 'rgba(0,255,65,0.07)' }}>
+        <Icon size={13} className="text-[#00FF41]" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[7px] font-black uppercase tracking-[0.2em] text-[var(--cream)]/30 leading-none mb-0.5">{label}</p>
@@ -231,10 +231,15 @@ export const GlobeEnvironmental = () => {
     {
       icon: Thermometer,
       label: 'Temperature',
-      value: researchData?.weather?.available
-        ? `${researchData.weather.current.temperature}°C Current`
+      value: researchData?.climate?.available
+        ? `${researchData.climate.currentTemperatureC ?? '—'}°C Current`
         : 'Unavailable',
-      status: researchData?.weather?.trend?.temperature ?? 'moderate',
+      status:
+        !researchData?.climate?.available
+          ? 'moderate'
+          : Number(researchData?.climate?.deviationFromRecentAverageC) > 0
+          ? 'warming'
+          : 'cooling',
     },
     {
       icon: Zap,
@@ -256,14 +261,32 @@ export const GlobeEnvironmental = () => {
       icon: CloudRain,
       label: 'Precipitation',
       value: researchData?.satellite?.available
-        ? researchData.satellite.precipitation
+        ? `${researchData.satellite.averageDailyPrecipitationMm ?? '—'} mm/day`
         : 'Unavailable',
       status: 'moderate',
     },
     {
       icon: Satellite,
-      label: 'Satellite',
-      value: researchData?.satellite?.available ? 'NASA POWER · Live' : 'Unavailable',
+      label: 'Solar Flux',
+      value: researchData?.satellite?.available
+        ? `${researchData.satellite.solarRadiationKwhm2Day ?? '—'} kWh/m²`
+        : 'Unavailable',
+      status: 'good',
+    },
+    {
+      icon: FlaskConical,
+      label: 'Soil pH',
+      value: researchData?.soil?.available
+        ? `pH ${researchData.soil.ph ?? '—'} · ${researchData.soil.dominantTexture || 'Mixed'}`
+        : 'Unavailable',
+      status: 'moderate',
+    },
+    {
+      icon: Sun,
+      label: 'Daylight',
+      value: researchData?.solar?.available
+        ? researchData.solar.dayLength || 'Available'
+        : 'Unavailable',
       status: 'good',
     },
   ];
@@ -280,20 +303,20 @@ export const GlobeEnvironmental = () => {
         className="absolute inset-0 pointer-events-none z-0"
         style={{
           backgroundImage:
-            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(204,255,0,0.007) 3px, rgba(204,255,0,0.007) 4px)',
+            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,255,65,0.007) 3px, rgba(0,255,65,0.007) 4px)',
         }}
       />
 
       <div className="relative z-10">
         {/* Header */}
         <div className="flex items-center gap-2 mb-5 flex-wrap">
-          <div className="w-1.5 h-1.5 rounded-full bg-[#CCFF00] animate-pulse" />
-          <span className="text-[8px] font-black uppercase tracking-[0.4em] text-[#CCFF00]/40">
+          <div className="w-1.5 h-1.5 rounded-full bg-[#00FF41] animate-pulse" />
+          <span className="text-[8px] font-black uppercase tracking-[0.4em] text-[#00FF41]/40">
             ENV_INTELLIGENCE · LIVE
           </span>
           <div className="flex-1" />
           <div className="flex items-center gap-1.5">
-            <MapPin size={10} className="text-[#CCFF00]/50" />
+            <MapPin size={10} className="text-[#00FF41]/50" />
             <span className="text-[9px] font-bold text-[var(--cream)]/40 truncate max-w-[180px]">
               {loading ? 'Detecting location...' : locationName?.displayName || 'Unknown Location'}
             </span>
@@ -326,7 +349,7 @@ export const GlobeEnvironmental = () => {
         {/* Footer */}
         <div className="mt-5 pt-3 border-t border-white/5 flex items-center justify-between">
           <span className="text-[8px] font-black uppercase tracking-[0.3em] text-[var(--cream)]/18">
-            7 Research APIs · 24h Cache · OpenAQ · GFW · NASA · GBIF
+            9 Research APIs · 24h Cache · OpenAQ · NASA · GBIF · SoilGrids
           </span>
           <span className="text-[8px] text-[var(--cream)]/12 tracking-widest uppercase">
             SAVE_SOIL · ENV v1.0

@@ -37,6 +37,115 @@ const setCache = (key, data) => {
   }
 };
 
+const getAverage = (values) => {
+  if (!Array.isArray(values) || values.length === 0) {
+    return null;
+  }
+
+  const numericValues = values
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
+
+  if (numericValues.length === 0) {
+    return null;
+  }
+
+  return numericValues.reduce((sum, value) => sum + value, 0) / numericValues.length;
+};
+
+const roundTo = (value, precision = 1) => {
+  if (!Number.isFinite(value)) {
+    return null;
+  }
+
+  return Number(value.toFixed(precision));
+};
+
+const extractSeries = (series) => {
+  if (!series || typeof series !== 'object') {
+    return [];
+  }
+
+  return Object.values(series)
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
+};
+
+const buildClimateSummary = (satellite, weather) => {
+  const averageTemperatureC = satellite?.averageTemperatureC ?? weather?.historical30Days?.temperature ?? null;
+  const averageDailyPrecipitationMm = satellite?.averageDailyPrecipitationMm ?? weather?.historical30Days?.precipitation ?? null;
+  const currentTemperatureC = weather?.current?.temperature ?? null;
+  const deviationFromRecentAverageC =
+    Number.isFinite(currentTemperatureC) && Number.isFinite(averageTemperatureC)
+      ? roundTo(currentTemperatureC - averageTemperatureC, 1)
+      : null;
+
+  if (!Number.isFinite(averageTemperatureC) && !Number.isFinite(averageDailyPrecipitationMm) && !Number.isFinite(currentTemperatureC)) {
+    return { available: false, message: 'Climate summary unavailable for this region' };
+  }
+
+  return {
+    averageTemperatureC,
+    averageDailyPrecipitationMm,
+    currentTemperatureC,
+    deviationFromRecentAverageC,
+    solarRadiationKwhm2Day: satellite?.solarRadiationKwhm2Day ?? null,
+    dataWindow: satellite?.period || 'Recent observation window',
+    source: 'NASA POWER + Open-Meteo',
+    available: true
+  };
+};
+
+const extractSoilDepthValue = (layer, preferredDepthLabel = '0-5cm') => {
+  const depths = Array.isArray(layer?.depths) ? layer.depths : [];
+
+  if (depths.length === 0) {
+    return { value: null, depth: null };
+  }
+
+  const preferredDepth =
+    depths.find((depth) => depth?.label === preferredDepthLabel)
+    || depths.find((depth) => `${depth?.range?.top_depth}-${depth?.range?.bottom_depth}${depth?.range?.unit_depth || ''}` === preferredDepthLabel)
+    || depths[0];
+
+  const depthLabel =
+    preferredDepth?.label
+    || (preferredDepth?.range
+      ? `${preferredDepth.range.top_depth}-${preferredDepth.range.bottom_depth}${preferredDepth.range.unit_depth || ''}`
+      : null);
+
+  const rawValue =
+    preferredDepth?.values?.mean
+    ?? preferredDepth?.values?.Q0_5
+    ?? preferredDepth?.values?.['Q0.5']
+    ?? preferredDepth?.mean
+    ?? null;
+
+  const numericValue = Number(rawValue);
+
+  return {
+    value: Number.isFinite(numericValue) ? numericValue : null,
+    depth: depthLabel
+  };
+};
+
+const findSoilLayer = (layers, name) => layers.find((layer) => layer?.name === name || layer?.property === name);
+
+const formatSolarClock = (isoString) => {
+  if (!isoString) {
+    return null;
+  }
+
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      hour: 'numeric',
+      minute: '2-digit'
+    }).format(new Date(isoString));
+  } catch (error) {
+    return isoString;
+  }
+};
+
 /**
  * 1. OpenAQ API - Air Quality Data
  * Free API, no key required
@@ -131,36 +240,22 @@ export const getDeforestationData = async (latitude, longitude) => {
  * Free API, no key required
  */
 export const getClimateData = async (latitude, longitude) => {
-  const cacheKey = `worldbank_${latitude.toFixed(1)}_${longitude.toFixed(1)}`;
+  const cacheKey = `climate_${latitude.toFixed(1)}_${longitude.toFixed(1)}`;
   const cached = getCached(cacheKey);
   if (cached) return cached;
 
   try {
-    // Get country code from coordinates first
-    const locationData = await geolocationService.getLocationName(latitude, longitude);
-    
-    // World Bank Climate API - temperature and precipitation data
-    // Using historical averages (simplified approach)
-    const result = {
-      location: locationData.country,
-      temperatureTrend: {
-        historical: 'Data aggregated from World Bank Climate Portal',
-        projection: 'Temperature rise of 1.5-2°C projected by 2050',
-        available: true
-      },
-      precipitationTrend: {
-        historical: 'Precipitation patterns show regional variability',
-        projection: 'Increased rainfall variability expected',
-        available: true
-      },
-      available: true,
-      note: 'Climate data based on regional models and historical trends'
-    };
+    const [satellite, weather] = await Promise.all([
+      getSatelliteData(latitude, longitude),
+      getWeatherHistoryData(latitude, longitude)
+    ]);
+
+    const result = buildClimateSummary(satellite, weather);
 
     setCache(cacheKey, result);
     return result;
   } catch (error) {
-    console.error('World Bank Climate error:', error);
+    console.error('Climate summary error:', error);
     return { available: false, error: error.message };
   }
 };
@@ -184,21 +279,31 @@ export const getSatelliteData = async (latitude, longitude) => {
     const end = endDate.toISOString().split('T')[0].replace(/-/g, '');
 
     const response = await fetch(
-      `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=PRECTOTCORR,T2M&community=AG&longitude=${longitude}&latitude=${latitude}&start=${start}&end=${end}&format=JSON`
+      `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=PRECTOTCORR,T2M,ALLSKY_SFC_SW_DWN&community=AG&longitude=${longitude}&latitude=${latitude}&start=${start}&end=${end}&format=JSON`
     );
 
     if (!response.ok) throw new Error('NASA POWER API error');
 
     const data = await response.json();
+    const precipitationSeries = extractSeries(data.properties?.parameter?.PRECTOTCORR);
+    const temperatureSeries = extractSeries(data.properties?.parameter?.T2M);
+    const solarSeries = extractSeries(data.properties?.parameter?.ALLSKY_SFC_SW_DWN);
     
     const result = {
-      precipitation: data.properties?.parameter?.PRECTOTCORR ? 'Available' : 'Limited',
-      temperature: data.properties?.parameter?.T2M ? 'Available' : 'Limited',
+      averageDailyPrecipitationMm: roundTo(getAverage(precipitationSeries), 2),
+      averageTemperatureC: roundTo(getAverage(temperatureSeries), 1),
+      solarRadiationKwhm2Day: roundTo(getAverage(solarSeries), 2),
+      dataPoints: Math.max(precipitationSeries.length, temperatureSeries.length, solarSeries.length),
       dataSource: 'NASA POWER',
       resolution: '0.5° x 0.5°',
-      available: true,
-      note: 'Satellite-derived climate parameters for agricultural monitoring'
+      period: `${startDate.toISOString().split('T')[0]} → ${endDate.toISOString().split('T')[0]}`,
+      available: precipitationSeries.length > 0 || temperatureSeries.length > 0 || solarSeries.length > 0,
+      note: '90-day satellite-derived climate parameters for agricultural monitoring'
     };
+
+    if (!result.available) {
+      return { available: false, message: 'NASA POWER returned no satellite climate values for this region' };
+    }
 
     setCache(cacheKey, result);
     return result;
@@ -354,6 +459,116 @@ export const getBiodiversityData = async (latitude, longitude) => {
   }
 };
 
+export const getSoilData = async (latitude, longitude) => {
+  const cacheKey = `soil_${latitude.toFixed(2)}_${longitude.toFixed(2)}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const params = new URLSearchParams();
+    params.set('lon', String(longitude));
+    params.set('lat', String(latitude));
+    ['clay', 'sand', 'silt', 'phh2o', 'soc'].forEach((property) => params.append('property', property));
+    ['0-5cm', '5-15cm'].forEach((depth) => params.append('depth', depth));
+    params.append('value', 'mean');
+
+    const response = await fetch(`https://rest.isric.org/soilgrids/v2.0/properties/query?${params.toString()}`);
+
+    if (!response.ok) throw new Error('SoilGrids API error');
+
+    const data = await response.json();
+    const feature = Array.isArray(data?.features) ? data.features[0] : data;
+    const layers = feature?.properties?.layers || data?.properties?.layers || data?.layers || [];
+
+    if (!Array.isArray(layers) || layers.length === 0) {
+      return { available: false, message: 'No SoilGrids data available for this region' };
+    }
+
+    const clayLayer = findSoilLayer(layers, 'clay');
+    const sandLayer = findSoilLayer(layers, 'sand');
+    const siltLayer = findSoilLayer(layers, 'silt');
+    const phLayer = findSoilLayer(layers, 'phh2o');
+    const carbonLayer = findSoilLayer(layers, 'soc');
+
+    const clay = extractSoilDepthValue(clayLayer);
+    const sand = extractSoilDepthValue(sandLayer);
+    const silt = extractSoilDepthValue(siltLayer);
+    const ph = extractSoilDepthValue(phLayer);
+    const organicCarbon = extractSoilDepthValue(carbonLayer);
+
+    const dominantTexture = Object.entries({ clay: clay.value ?? -1, sand: sand.value ?? -1, silt: silt.value ?? -1 })
+      .filter(([, value]) => value >= 0)
+      .sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+
+    const result = {
+      clay: clay.value,
+      sand: sand.value,
+      silt: silt.value,
+      ph: ph.value,
+      organicCarbon: organicCarbon.value,
+      clayUnit: clayLayer?.unit_measure?.mapped_units || clayLayer?.unit_measure?.target_units || null,
+      sandUnit: sandLayer?.unit_measure?.mapped_units || sandLayer?.unit_measure?.target_units || null,
+      siltUnit: siltLayer?.unit_measure?.mapped_units || siltLayer?.unit_measure?.target_units || null,
+      phUnit: phLayer?.unit_measure?.mapped_units || phLayer?.unit_measure?.target_units || null,
+      carbonUnit: carbonLayer?.unit_measure?.mapped_units || carbonLayer?.unit_measure?.target_units || null,
+      sampleDepth: clay.depth || sand.depth || silt.depth || ph.depth || organicCarbon.depth || '0-5cm',
+      dominantTexture: dominantTexture ? dominantTexture.toUpperCase() : null,
+      source: 'SoilGrids',
+      available: [clay.value, sand.value, silt.value, ph.value, organicCarbon.value].some((value) => Number.isFinite(value))
+    };
+
+    if (!result.available) {
+      return { available: false, message: 'No SoilGrids values available for this region' };
+    }
+
+    setCache(cacheKey, result);
+    return result;
+  } catch (error) {
+    console.error('SoilGrids error:', error);
+    return { available: false, error: error.message };
+  }
+};
+
+export const getSolarData = async (latitude, longitude) => {
+  const cacheKey = `solar_${latitude.toFixed(2)}_${longitude.toFixed(2)}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const response = await fetch(
+      `https://api.sunrise-sunset.org/json?lat=${latitude}&lng=${longitude}&date=today&formatted=0`
+    );
+
+    if (!response.ok) throw new Error('Sunrise-Sunset API error');
+
+    const data = await response.json();
+
+    if (data?.status !== 'OK' || !data?.results) {
+      return { available: false, message: 'No solar timing data available for this region' };
+    }
+
+    const result = {
+      sunrise: data.results.sunrise,
+      sunset: data.results.sunset,
+      solarNoon: data.results.solar_noon,
+      dayLength: data.results.day_length,
+      civilDawn: data.results.civil_twilight_begin,
+      civilDusk: data.results.civil_twilight_end,
+      sunriseLocal: formatSolarClock(data.results.sunrise),
+      sunsetLocal: formatSolarClock(data.results.sunset),
+      solarNoonLocal: formatSolarClock(data.results.solar_noon),
+      source: 'Sunrise-Sunset.org',
+      available: true
+    };
+
+    setCache(cacheKey, result);
+    return result;
+  } catch (error) {
+    console.error('Sunrise-Sunset error:', error);
+    return { available: false, error: error.message };
+  }
+};
+
 /**
  * Fetch all research data in parallel
  */
@@ -362,29 +577,36 @@ export const getAllResearchData = async (latitude, longitude) => {
     const [
       airQuality,
       deforestation,
-      climate,
       satellite,
       carbon,
       weather,
-      biodiversity
+      biodiversity,
+      soil,
+      solar
     ] = await Promise.allSettled([
       getAirQualityData(latitude, longitude),
       getDeforestationData(latitude, longitude),
-      getClimateData(latitude, longitude),
       getSatelliteData(latitude, longitude),
       getCarbonIntensityData(latitude, longitude),
       getWeatherHistoryData(latitude, longitude),
-      getBiodiversityData(latitude, longitude)
+      getBiodiversityData(latitude, longitude),
+      getSoilData(latitude, longitude),
+      getSolarData(latitude, longitude)
     ]);
+
+    const satelliteValue = satellite.status === 'fulfilled' ? satellite.value : { available: false };
+    const weatherValue = weather.status === 'fulfilled' ? weather.value : { available: false };
 
     return {
       airQuality: airQuality.status === 'fulfilled' ? airQuality.value : { available: false },
       deforestation: deforestation.status === 'fulfilled' ? deforestation.value : { available: false },
-      climate: climate.status === 'fulfilled' ? climate.value : { available: false },
-      satellite: satellite.status === 'fulfilled' ? satellite.value : { available: false },
+      climate: buildClimateSummary(satelliteValue, weatherValue),
+      satellite: satelliteValue,
       carbon: carbon.status === 'fulfilled' ? carbon.value : { available: false },
-      weather: weather.status === 'fulfilled' ? weather.value : { available: false },
-      biodiversity: biodiversity.status === 'fulfilled' ? biodiversity.value : { available: false }
+      weather: weatherValue,
+      biodiversity: biodiversity.status === 'fulfilled' ? biodiversity.value : { available: false },
+      soil: soil.status === 'fulfilled' ? soil.value : { available: false },
+      solar: solar.status === 'fulfilled' ? solar.value : { available: false }
     };
   } catch (error) {
     console.error('Research data fetch error:', error);
@@ -400,5 +622,7 @@ export const environmentalResearchService = {
   getCarbonIntensityData,
   getWeatherHistoryData,
   getBiodiversityData,
+  getSoilData,
+  getSolarData,
   getAllResearchData
 };

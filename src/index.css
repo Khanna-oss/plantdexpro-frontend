@@ -17,6 +17,8 @@
   --sand: #E3D5B8;
   --cream: #F5F5DC;
   --radium: #CCFF00;
+  --hud-neon: #00FF41;
+  --hud-amber: #FF9900;
   --parrot-green: #98FB98;
   --status-red: #c62828;
   --content-red: #6B0000;
@@ -205,25 +207,32 @@ h3,
 
 /* Unified Result Panel */
 .result-panel {
-  border-radius: 2rem;
-  background: linear-gradient(165deg, #e8f5e9 0%, #c8e6c9 30%, #a5d6a7 100%);
-  color: #1D3B23;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: 1.35rem;
+  background:
+    linear-gradient(180deg, rgba(10, 10, 10, 0.96) 0%, rgba(6, 8, 8, 0.96) 100%),
+    linear-gradient(135deg, rgba(0, 255, 65, 0.05), transparent 35%);
+  color: rgba(235, 255, 240, 0.86);
+  border: 1px solid rgba(0, 255, 65, 0.16);
+  box-shadow: 0 0 0 1px rgba(0, 255, 65, 0.06), 0 18px 60px rgba(0, 0, 0, 0.42), 0 0 42px rgba(0, 255, 65, 0.08);
+  position: relative;
+  overflow: hidden;
 }
 
 .result-section {
-  background: rgba(255, 255, 255, 0.45);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.40);
-  border-radius: 1.25rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.02) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 255, 65, 0.10);
+  border-radius: 0.95rem;
   padding: 1.25rem;
-  transition: background 0.2s;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.015);
 }
 
 .result-section:hover {
-  background: rgba(255, 255, 255, 0.60);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045) 0%, rgba(255, 255, 255, 0.025) 100%);
+  border-color: rgba(0, 255, 65, 0.18);
+  box-shadow: 0 0 24px rgba(0, 255, 65, 0.06);
 }
 
 .result-badge {
@@ -231,48 +240,55 @@ h3,
   align-items: center;
   gap: 0.375rem;
   padding: 0.25rem 0.75rem;
-  border-radius: 999px;
+  border-radius: 0.5rem;
   font-size: 0.625rem;
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
 }
 
 .result-badge-verified {
-  background: rgba(27, 94, 32, 0.15);
-  color: #1b5e20;
-  border: 1px solid rgba(27, 94, 32, 0.25);
+  background: rgba(0, 255, 65, 0.10);
+  color: var(--hud-neon);
+  border: 1px solid rgba(0, 255, 65, 0.24);
+  box-shadow: inset 0 0 12px rgba(0, 255, 65, 0.05);
 }
 
 .result-badge-inference {
-  background: rgba(198, 40, 40, 0.10);
-  color: #c62828;
-  border: 1px solid rgba(198, 40, 40, 0.20);
+  background: rgba(255, 153, 0, 0.10);
+  color: #ffb84d;
+  border: 1px solid rgba(255, 153, 0, 0.24);
+  box-shadow: inset 0 0 12px rgba(255, 153, 0, 0.05);
 }
 
 .nutrient-card {
-  background: rgba(255, 255, 255, 0.55);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid rgba(0, 255, 65, 0.10);
+  border-radius: 0.9rem;
   padding: 1rem;
   transition: all 0.2s;
 }
 
 .nutrient-card:hover {
-  background: rgba(255, 255, 255, 0.75);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border-color: rgba(0, 255, 65, 0.18);
 }
 
 .nutrient-card-unavailable {
-  background: rgba(0, 0, 0, 0.03);
-  border: 1px dashed rgba(0, 0, 0, 0.12);
+  background: rgba(255, 153, 0, 0.04);
+  border: 1px dashed rgba(255, 153, 0, 0.20);
 }
 
 .research-metrics-panel {
-  background: rgba(26, 15, 10, 0.92);
+  background:
+    linear-gradient(180deg, rgba(6, 8, 8, 0.96) 0%, rgba(0, 0, 0, 0.95) 100%),
+    linear-gradient(135deg, rgba(0, 255, 65, 0.06), transparent 45%);
   color: var(--cream);
-  border-radius: 1.25rem;
-  border: 1px solid rgba(255, 248, 239, 0.08);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.32);
+  border-radius: 1rem;
+  border: 1px solid rgba(0, 255, 65, 0.16);
+  box-shadow: 0 0 0 1px rgba(0, 255, 65, 0.06), 0 16px 48px rgba(0, 0, 0, 0.42), 0 0 30px rgba(0, 255, 65, 0.08);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
 }
 
 @keyframes scan-line {
@@ -286,4 +302,165 @@ h3,
 
 .glass-card {
   background: linear-gradient(180deg, rgba(255, 248, 239, 0.18) 0%, rgba(255, 248, 239, 0.10) 100%) !important;
+}
+
+.hud-display {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+}
+
+.hud-display .result-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 255, 65, 0.02) 3px, rgba(0, 255, 65, 0.02) 4px);
+  opacity: 0.55;
+}
+
+.hud-display .result-panel h2,
+.hud-display .result-panel h3,
+.hud-display .result-panel h4,
+.hud-display .result-panel button,
+.hud-display .soil-shell,
+.hud-display .research-metrics-panel {
+  font-family: inherit;
+}
+
+.hud-display .result-panel h2 {
+  color: var(--hud-neon);
+  text-shadow: 0 0 18px rgba(0, 255, 65, 0.16);
+}
+
+.hud-display .result-panel p,
+.hud-display .result-panel li,
+.hud-display .result-panel a {
+  color: rgba(235, 255, 240, 0.82);
+}
+
+.hud-display .result-panel a:hover {
+  color: var(--hud-neon);
+}
+
+.hud-display .soil-shell {
+  background: linear-gradient(180deg, rgba(6, 8, 8, 0.96) 0%, rgba(0, 0, 0, 0.95) 100%);
+  border: 1px solid rgba(0, 255, 65, 0.16);
+  box-shadow: 0 0 0 1px rgba(0, 255, 65, 0.06), 0 16px 48px rgba(0, 0, 0, 0.42), 0 0 30px rgba(0, 255, 65, 0.08);
+}
+
+.hud-display .glass-button {
+  background: linear-gradient(135deg, rgba(0, 255, 65, 0.16), rgba(0, 0, 0, 0.88));
+  color: var(--hud-neon);
+  border: 1px solid rgba(0, 255, 65, 0.22);
+  box-shadow: 0 0 24px rgba(0, 255, 65, 0.08);
+}
+
+.hud-display .glass-button:hover {
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.12);
+}
+
+.hud-display .hud-meta-kicker {
+  color: rgba(0, 255, 65, 0.68);
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+}
+
+.hud-display .hud-subline {
+  color: rgba(245, 245, 220, 0.48);
+}
+
+.hud-display .hud-warning-block {
+  background: rgba(255, 153, 0, 0.06);
+  border: 1px solid rgba(255, 153, 0, 0.22);
+}
+
+.hud-display .hud-warning-block p,
+.hud-display .hud-warning-block span,
+.hud-display .hud-warning-block svg {
+  color: #ffb84d;
+}
+
+.hud-display .hud-radar {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 1rem;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at center, rgba(0, 255, 65, 0.08) 0%, rgba(0, 255, 65, 0.03) 28%, transparent 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(0, 255, 65, 0.16);
+}
+
+.hud-display .hud-radar-ring,
+.hud-display .hud-radar-cross {
+  position: absolute;
+  inset: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  border: 1px solid rgba(0, 255, 65, 0.16);
+}
+
+.hud-display .hud-radar-cross {
+  border: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hud-display .hud-radar-cross::before,
+.hud-display .hud-radar-cross::after {
+  content: '';
+  position: absolute;
+  background: rgba(0, 255, 65, 0.14);
+}
+
+.hud-display .hud-radar-cross::before {
+  top: 50%;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+}
+
+.hud-display .hud-radar-cross::after {
+  left: 50%;
+  top: 10%;
+  bottom: 10%;
+  width: 1px;
+}
+
+.hud-display .hud-radar-sweep {
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(from 0deg, rgba(0, 255, 65, 0.28), rgba(0, 255, 65, 0.06), transparent 22%, transparent 100%);
+  animation: hud-radar-spin 4.4s linear infinite;
+  transform-origin: center;
+}
+
+.hud-display .hud-radar-blip {
+  position: absolute;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-left: -0.275rem;
+  margin-top: -0.275rem;
+  border-radius: 999px;
+  background: var(--hud-neon);
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.85);
+}
+
+.hud-display .hud-radar-blip::after {
+  content: '';
+  position: absolute;
+  inset: -0.4rem;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 255, 65, 0.55);
+  animation: hud-radar-pulse 2.2s ease-out infinite;
+}
+
+@keyframes hud-radar-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes hud-radar-pulse {
+  0% { transform: scale(0.4); opacity: 0.9; }
+  70% { transform: scale(1.5); opacity: 0; }
+  100% { transform: scale(1.5); opacity: 0; }
 }

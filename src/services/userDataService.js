@@ -177,20 +177,31 @@ export const submitFeedback = async (userId, identificationId, feedback) => {
       feedbackType: feedback.type, // 'confirm' or 'correct'
       correctName: feedback.correctName || null,
       comments: feedback.comments || null,
+      submittedByAuthenticatedUser: true,
+      plantSnapshot: feedback.plantSnapshot || null,
+      hbdoSnapshot: feedback.hbdoSnapshot || null,
+      xaiSnapshot: feedback.xaiSnapshot || null,
       timestamp: serverTimestamp(),
       createdAt: new Date().toISOString()
     });
     
     // Also update the history entry with feedback
-    if (identificationId) {
-      const historyRef = doc(db, 'users', userId, 'history', identificationId);
-      await updateDoc(historyRef, {
-        feedback: {
-          type: feedback.type,
-          correctName: feedback.correctName,
-          submittedAt: new Date().toISOString()
-        }
-      });
+    const historyEntryId = feedback.historyEntryId || identificationId;
+    if (historyEntryId) {
+      const historyRef = doc(db, 'users', userId, 'history', historyEntryId);
+      const historyDoc = await getDoc(historyRef);
+      if (historyDoc.exists()) {
+        await updateDoc(historyRef, {
+          feedback: {
+            id: feedbackRef.id,
+            type: feedback.type,
+            correctName: feedback.correctName || null,
+            comments: feedback.comments || null,
+            submittedAt: new Date().toISOString(),
+            submittedByAuthenticatedUser: true
+          }
+        });
+      }
     }
     
     return feedbackRef.id;

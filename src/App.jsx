@@ -6,7 +6,6 @@ import { ResultsDisplay } from './components/ResultsDisplay.jsx';
 import { Spinner } from './components/Spinner.jsx';
 import { useDarkMode } from './hooks/useDarkMode.js';
 import { plantDexService } from './services/plantdexservice.js';
-import { compressImage } from './utils/imageHelper.js';
 import { motion } from 'framer-motion';
 import { XCircle, History, Leaf } from 'lucide-react';
 import { SoilBackground } from './components/SoilBackground.jsx';
@@ -55,8 +54,7 @@ const App = () => {
       const objectUrl = URL.createObjectURL(file);
       setImagePreview(objectUrl);
 
-      const base64Image = await compressImage(file);
-      const data = await plantDexService.identifyPlant(base64Image);
+      const data = await plantDexService.identifyPlant(file);
       
       if (data.error) throw new Error(data.error);
       
@@ -85,6 +83,12 @@ const App = () => {
     setImagePreview(null);
     setInferenceMessage('');
   }, [clearInferenceTimers]);
+
+  const hasIdentificationResult = results.some(
+    (plant) => Boolean(plant?.scientificName || plant?.commonName)
+  );
+  const shouldShowEnvironmentalHud =
+    hasIdentificationResult && !isLoading && !error && !inferenceMessage;
 
   return (
     <div className={`min-h-screen flex flex-col relative transition-colors duration-500 ${theme}`}>
@@ -229,7 +233,7 @@ const App = () => {
         )}
 
         {/* === PHASE 5: Environmental Intelligence Layer === */}
-        {!isLoading && (
+        {shouldShowEnvironmentalHud && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
