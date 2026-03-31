@@ -17,7 +17,9 @@
     "framer-motion": "^11.0.8",
     "lucide-react": "^0.344.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-globe.gl": "^2.37.0",
+    "three": "^0.183.2"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.29.2",

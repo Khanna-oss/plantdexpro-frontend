@@ -6,10 +6,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Wind, TreePine, Thermometer, Satellite, Zap, 
-  CloudRain, Leaf, AlertCircle, TrendingUp, TrendingDown,
-  Sun, FlaskConical,
-  MapPin, Calendar, Database
+  Wind, TreePine, Thermometer, Satellite, Zap,
+  CloudRain, Leaf, AlertCircle, Sun, FlaskConical,
+  MapPin, Database
 } from 'lucide-react';
 import { geolocationService } from '../services/geolocationService.js';
 import { environmentalResearchService } from '../services/environmentalResearchService.js';
@@ -17,14 +16,14 @@ import { environmentalResearchService } from '../services/environmentalResearchS
 const LoadingShimmer = () => (
   <div className="animate-pulse space-y-3">
     <div className="h-4 bg-[#00FF41]/10 rounded w-3/4"></div>
-    <div className="h-3 bg-white/8 rounded w-1/2"></div>
+    <div className="h-3 bg-white/8 rounded w-5/6"></div>
     <div className="h-3 bg-white/8 rounded w-2/3"></div>
   </div>
 );
 
-const DataUnavailable = ({ message = 'Research Data Pending' }) => (
-  <div className="flex items-center gap-2 text-[#ffb84d] text-sm">
-    <AlertCircle size={16} />
+const DataUnavailable = ({ message = 'Context currently unavailable' }) => (
+  <div className="flex items-start gap-2 text-[#ffb84d] text-sm leading-relaxed">
+    <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
     <span>{message}</span>
   </div>
 );
@@ -34,7 +33,68 @@ const formatMetric = (value, precision = 1) => {
   return Number.isFinite(numericValue) ? numericValue.toFixed(precision) : '—';
 };
 
-const ResearchCard = ({ icon: Icon, title, subtitle, children, loading }) => (
+const hasMetric = (value) => Number.isFinite(Number(value));
+
+const formatMetricWithUnit = (value, unit = '', precision = 1, fallback = 'Currently unavailable') => {
+  if (!hasMetric(value)) {
+    return fallback;
+  }
+
+  return `${formatMetric(value, precision)}${unit ? ` ${unit}` : ''}`;
+};
+
+const formatCoordinate = (value, axis) => {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return '—';
+  }
+
+  const suffix = axis === 'lat'
+    ? numericValue >= 0 ? 'N' : 'S'
+    : numericValue >= 0 ? 'E' : 'W';
+
+  return `${Math.abs(numericValue).toFixed(2)}°${suffix}`;
+};
+
+const getMessage = (node, fallback) => node?.message || node?.error || fallback;
+
+const valueToneClass = {
+  good: 'text-emerald-300',
+  moderate: 'text-amber-300',
+  alert: 'text-rose-300',
+  neutral: 'text-[var(--cream)]'
+};
+
+const badgeToneClass = {
+  live: 'bg-[#00FF41]/10 text-[#86efac] border border-[#00FF41]/20',
+  estimated: 'bg-amber-500/10 text-amber-300 border border-amber-400/20',
+  limited: 'bg-rose-500/10 text-rose-300 border border-rose-400/20'
+};
+
+const InsightRow = ({ icon: Icon, label, value, detail, tone = 'neutral' }) => (
+  <div className="rounded-xl border border-white/8 bg-white/4 px-3 py-3">
+    <div className="flex items-start gap-3">
+      <div className="w-8 h-8 rounded-lg bg-[#00FF41]/10 border border-[#00FF41]/15 flex items-center justify-center flex-shrink-0">
+        <Icon size={15} className="text-[#00FF41]" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--cream)]/42 mb-1">
+          {label}
+        </p>
+        <p className={`text-sm font-bold leading-snug ${valueToneClass[tone] || valueToneClass.neutral}`}>
+          {value}
+        </p>
+        {detail && (
+          <p className="text-xs text-[var(--cream)]/48 leading-relaxed mt-1">
+            {detail}
+          </p>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+const ResearchCard = ({ icon: Icon, title, subtitle, summary, badge = 'live', children, loading }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -45,13 +105,19 @@ const ResearchCard = ({ icon: Icon, title, subtitle, children, loading }) => (
         <Icon size={20} className="text-[#00FF41]" />
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-black uppercase tracking-[0.16em] text-[#00FF41] mb-1">
-          {title}
-        </h3>
-        <p className="text-xs text-[var(--cream)]/50">{subtitle}</p>
+        <div className="flex items-center justify-between gap-3 mb-1">
+          <h3 className="text-sm font-black uppercase tracking-[0.16em] text-[#00FF41]">
+            {title}
+          </h3>
+          <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.14em] ${badgeToneClass[badge] || badgeToneClass.live}`}>
+            {badge}
+          </span>
+        </div>
+        <p className="text-xs text-[var(--cream)]/50 leading-relaxed">{subtitle}</p>
       </div>
     </div>
-    <div className="space-y-2">
+    <p className="text-sm text-[var(--cream)]/70 leading-relaxed mb-4">{summary}</p>
+    <div className="space-y-3">
       {loading ? <LoadingShimmer /> : children}
     </div>
   </motion.div>
@@ -71,18 +137,15 @@ export const ResearchDataCards = () => {
     try {
       setLoading(true);
 
-      // Get user location
       const userLocation = await geolocationService.getUserLocation();
       setLocation(userLocation);
 
-      // Get location name
       const locName = await geolocationService.getLocationName(
         userLocation.latitude,
         userLocation.longitude
       );
       setLocationName(locName);
 
-      // Fetch all research data in parallel
       const data = await environmentalResearchService.getAllResearchData(
         userLocation.latitude,
         userLocation.longitude
@@ -95,365 +158,277 @@ export const ResearchDataCards = () => {
     }
   };
 
+  const pm25Value = researchData?.airQuality?.pm25?.value;
+  const pm25Tone = Number.isFinite(pm25Value)
+    ? pm25Value < 15 ? 'good' : pm25Value < 35 ? 'moderate' : 'alert'
+    : 'neutral';
+  const biodiversityTone = researchData?.biodiversity?.richness === 'high'
+    ? 'good'
+    : researchData?.biodiversity?.richness === 'moderate'
+    ? 'moderate'
+    : researchData?.biodiversity?.richness === 'low'
+    ? 'alert'
+    : 'neutral';
+  const forestTone = researchData?.deforestation?.severity === 'low'
+    ? 'good'
+    : researchData?.deforestation?.severity === 'moderate'
+    ? 'moderate'
+    : researchData?.deforestation?.severity === 'high'
+    ? 'alert'
+    : 'neutral';
+  const carbonTone = researchData?.carbon?.index === 'low'
+    ? 'good'
+    : researchData?.carbon?.index === 'moderate'
+    ? 'moderate'
+    : researchData?.carbon?.index === 'high'
+    ? 'alert'
+    : 'neutral';
+  const currentClimateLabel = hasMetric(researchData?.climate?.currentTemperatureC)
+    ? `${formatMetric(researchData.climate.currentTemperatureC, 1)}°C now`
+    : 'Current reading unavailable';
+  const averageClimateLabel = hasMetric(researchData?.climate?.averageTemperatureC)
+    ? `${formatMetric(researchData.climate.averageTemperatureC, 1)}°C recent average`
+    : 'Recent average unavailable';
+
+  const geoAvailable = Boolean(locationName || location || researchData?.climate?.available || researchData?.solar?.available || researchData?.satellite?.available);
+  const airAvailable = Boolean(researchData?.airQuality?.available || researchData?.weather?.available || researchData?.climate?.available);
+  const ecoAvailable = Boolean(researchData?.biodiversity?.available || researchData?.deforestation?.available || researchData?.carbon?.available || researchData?.satellite?.available);
+  const soilAvailable = Boolean(researchData?.soil?.available);
+
   return (
     <div className="space-y-6 font-mono">
-      {/* Location Header */}
-      <div className="flex items-center gap-3 px-4 py-3 bg-white/5 rounded-2xl border border-[#00FF41]/10">
-        <MapPin size={16} className="text-[#00FF41]" />
-        <div>
+      <div className="flex items-start gap-3 px-4 py-4 bg-white/5 rounded-2xl border border-[#00FF41]/10">
+        <MapPin size={16} className="text-[#00FF41] mt-0.5" />
+        <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-[0.22em] text-[#00FF41]/65">
-            SYS.GEO//RESEARCH_LOCATION
+            EARTH_INTELLIGENCE//LOCAL_CONTEXT
           </p>
-          <p className="text-sm text-[var(--cream)]">
-            {loading ? 'Detecting location...' : locationName?.displayName || 'Unknown Location'}
+          <p className="text-sm text-[var(--cream)] mt-1 leading-relaxed">
+            {loading
+              ? 'Preparing readable regional context...'
+              : locationName?.displayName || 'Using a fallback observation region for context.'}
+          </p>
+          <p className="text-xs text-[var(--cream)]/45 mt-1">
+            These panels translate live research feeds into plain-language growing conditions around the detected plant location.
           </p>
         </div>
       </div>
 
-      {/* Research Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* 1. Air Quality */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <ResearchCard
+          icon={MapPin}
+          title="SYS.GEO"
+          subtitle="Where this observation sits in time, place, and daylight context"
+          summary="This module anchors the plant result to a real observation zone so the rest of the telemetry stays understandable."
+          badge={geoAvailable ? 'live' : 'limited'}
+          loading={loading}
+        >
+          {geoAvailable ? (
+            <div className="space-y-3">
+              <InsightRow
+                icon={MapPin}
+                label="Observation zone"
+                value={locationName?.displayName || 'Observation zone currently unavailable'}
+                detail={location
+                  ? `${formatCoordinate(location.latitude, 'lat')} · ${formatCoordinate(location.longitude, 'lng')}`
+                  : 'Regional estimates use device location when available.'}
+              />
+              <InsightRow
+                icon={Satellite}
+                label="Satellite window"
+                value={researchData?.satellite?.available
+                  ? researchData.satellite.period
+                  : getMessage(researchData?.satellite, 'Satellite history currently unavailable')}
+                detail={researchData?.satellite?.available
+                  ? `${researchData.satellite.dataSource} · ${researchData.satellite.note}`
+                  : 'Recent satellite context helps compare current conditions with the recent season.'}
+              />
+              <InsightRow
+                icon={Sun}
+                label="Daylight cycle"
+                value={researchData?.solar?.available
+                  ? `${researchData.solar.sunriseLocal || '—'} → ${researchData.solar.sunsetLocal || '—'}`
+                  : getMessage(researchData?.solar, 'Daylight timing currently unavailable')}
+                detail={researchData?.solar?.available
+                  ? `Day length ${researchData.solar.dayLength || '—'} · Solar noon ${researchData.solar.solarNoonLocal || '—'}`
+                  : 'Sunrise and sunset help explain daily energy available to leaves and flowers.'}
+                tone="good"
+              />
+              <InsightRow
+                icon={Thermometer}
+                label="Regional climate baseline"
+                value={researchData?.climate?.available
+                  ? `${currentClimateLabel} · ${averageClimateLabel}`
+                  : getMessage(researchData?.climate, 'Regional climate summary currently unavailable')}
+                detail={researchData?.climate?.available
+                  ? `${researchData.climate.note || 'Climate summaries combine recent weather and satellite baselines.'} · Average daily rain ${formatMetricWithUnit(researchData.climate.averageDailyPrecipitationMm, 'mm', 2, 'unavailable')}`
+                  : 'Climate summaries combine recent weather and satellite baselines.'}
+                tone={Number(researchData?.climate?.deviationFromRecentAverageC) > 1 ? 'moderate' : 'neutral'}
+              />
+            </div>
+          ) : (
+            <DataUnavailable message="Geographic context is currently unavailable for this observation." />
+          )}
+        </ResearchCard>
+
         <ResearchCard
           icon={Wind}
-          title="SYS.AIR//ATMOSPHERIC_IMPACT"
-          subtitle="Real-time air quality telemetry"
+          title="SYS.AIR"
+          subtitle="Air quality and weather conditions that can influence plant stress"
+          summary="This module converts atmospheric feeds into direct signals about air cleanliness, moisture, and temperature pressure."
+          badge={airAvailable ? 'live' : 'limited'}
           loading={loading}
         >
-          {researchData?.airQuality?.available ? (
-            <div className="space-y-2">
-              {researchData.airQuality.pm25 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-[var(--cream)]/60">PM2.5</span>
-                  <span className="text-sm font-bold text-[var(--cream)]">
-                    {researchData.airQuality.pm25.value.toFixed(1)} {researchData.airQuality.pm25.unit}
-                  </span>
-                </div>
-              )}
-              {researchData.airQuality.no2 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-[var(--cream)]/60">NO₂</span>
-                  <span className="text-sm font-bold text-[var(--cream)]">
-                    {researchData.airQuality.no2.value.toFixed(1)} {researchData.airQuality.no2.unit}
-                  </span>
-                </div>
-              )}
-              {researchData.airQuality.o3 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-[var(--cream)]/60">O₃</span>
-                  <span className="text-sm font-bold text-[var(--cream)]">
-                    {researchData.airQuality.o3.value.toFixed(1)} {researchData.airQuality.o3.unit}
-                  </span>
-                </div>
-              )}
-              <p className="text-xs text-[var(--cream)]/40 mt-2">
-                Source: {researchData.airQuality.location || 'OpenAQ'}
-              </p>
+          {airAvailable ? (
+            <div className="space-y-3">
+              <InsightRow
+                icon={Wind}
+                label="Particle load"
+                value={hasMetric(researchData?.airQuality?.pm25?.value)
+                  ? `PM2.5 ${formatMetricWithUnit(researchData.airQuality.pm25.value, researchData.airQuality.pm25.unit, 1)}`
+                  : getMessage(researchData?.airQuality, 'Particle readings currently unavailable')}
+                detail={researchData?.airQuality?.location
+                  ? `Nearest station: ${researchData.airQuality.location}`
+                  : 'Fine particulate matter can affect leaf surfaces and overall plant vigor.'}
+                tone={pm25Tone}
+              />
+              <InsightRow
+                icon={AlertCircle}
+                label="Reactive gases"
+                value={researchData?.airQuality?.no2 || researchData?.airQuality?.o3
+                  ? `NO₂ ${researchData?.airQuality?.no2 ? `${formatMetric(researchData.airQuality.no2.value, 1)} ${researchData.airQuality.no2.unit}` : '—'} · O₃ ${researchData?.airQuality?.o3 ? `${formatMetric(researchData.airQuality.o3.value, 1)} ${researchData.airQuality.o3.unit}` : '—'}`
+                  : 'Nitrogen dioxide and ozone readings currently unavailable'}
+                detail="These gases help explain pollution stress in urban and roadside environments."
+              />
+              <InsightRow
+                icon={CloudRain}
+                label="Moisture and wind"
+                value={researchData?.weather?.available
+                  ? `${formatMetricWithUnit(researchData.weather.current.precipitation, 'mm', 1, 'Rainfall unavailable')} rain now · ${formatMetricWithUnit(researchData.weather.current.windSpeed, '', 1, 'Wind unavailable')} wind speed`
+                  : getMessage(researchData?.weather, 'Current weather conditions currently unavailable')}
+                detail={researchData?.weather?.available
+                  ? `30-day rainfall comparison ${formatMetricWithUnit(researchData.weather.historical30Days.precipitation, 'mm', 1, 'unavailable')}`
+                  : 'Wind and rain influence evapotranspiration and short-term leaf stress.'}
+                tone={researchData?.weather?.trend?.precipitation === 'decreasing' ? 'moderate' : 'neutral'}
+              />
+              <InsightRow
+                icon={Thermometer}
+                label="Temperature shift"
+                value={researchData?.climate?.available && Number.isFinite(Number(researchData.climate.deviationFromRecentAverageC))
+                  ? `${researchData.climate.deviationFromRecentAverageC > 0 ? '+' : ''}${formatMetric(researchData.climate.deviationFromRecentAverageC, 1)}°C versus the recent average`
+                  : 'Temperature deviation currently unavailable'}
+                detail="This compares current conditions with the recent local baseline rather than a global average."
+                tone={Number(researchData?.climate?.deviationFromRecentAverageC) > 1 ? 'alert' : Number(researchData?.climate?.deviationFromRecentAverageC) > 0 ? 'moderate' : 'good'}
+              />
             </div>
           ) : (
-            <DataUnavailable message={researchData?.airQuality?.message || 'Air quality data pending'} />
+            <DataUnavailable message="Air and weather context is currently unavailable for this location." />
           )}
         </ResearchCard>
 
-        {/* 2. Deforestation */}
-        <ResearchCard
-          icon={TreePine}
-          title="SYS.FOREST//DEFORESTATION_CONTEXT"
-          subtitle="Regional forest cover trends"
-          loading={loading}
-        >
-          {researchData?.deforestation?.available ? (
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">Tree Cover Loss</span>
-                <span className="text-sm font-bold text-[var(--cream)]">
-                  {researchData.deforestation.totalLoss.toFixed(0)} ha
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">Period</span>
-                <span className="text-sm font-bold text-[var(--cream)]">
-                  {researchData.deforestation.period}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                  researchData.deforestation.severity === 'high' 
-                    ? 'bg-rose-500/20 text-rose-300'
-                    : researchData.deforestation.severity === 'moderate'
-                    ? 'bg-orange-500/20 text-orange-300'
-                    : 'bg-green-500/20 text-green-300'
-                }`}>
-                  {researchData.deforestation.severity.toUpperCase()} Impact
-                </span>
-              </div>
-              <p className="text-xs text-[var(--cream)]/40 mt-2">Source: Global Forest Watch</p>
-            </div>
-          ) : (
-            <DataUnavailable />
-          )}
-        </ResearchCard>
-
-        {/* 3. Climate Resilience */}
-        <ResearchCard
-          icon={Thermometer}
-          title="SYS.CLIMATE//RESILIENCE_MODEL"
-          subtitle="Long-term climate trends"
-          loading={loading}
-        >
-          {researchData?.climate?.available ? (
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">Current Temp</span>
-                <span className="text-sm font-bold text-[var(--cream)]">
-                  {formatMetric(researchData.climate.currentTemperatureC, 1)}°C
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">Recent Avg</span>
-                <span className="text-sm font-bold text-[var(--cream)]">
-                  {formatMetric(researchData.climate.averageTemperatureC, 1)}°C
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">Daily Rain Avg</span>
-                <span className="text-sm font-bold text-[var(--cream)]">
-                  {formatMetric(researchData.climate.averageDailyPrecipitationMm, 2)} mm
-                </span>
-              </div>
-              {Number.isFinite(Number(researchData.climate.deviationFromRecentAverageC)) && (
-                <p className="text-xs text-[var(--cream)]/50 mt-2">
-                  Temp deviation: {researchData.climate.deviationFromRecentAverageC > 0 ? '+' : ''}
-                  {formatMetric(researchData.climate.deviationFromRecentAverageC, 1)}°C vs recent satellite average
-                </p>
-              )}
-              <p className="text-xs text-[var(--cream)]/40 mt-2">Source: {researchData.climate.source}</p>
-            </div>
-          ) : (
-            <DataUnavailable message={researchData?.climate?.message || 'Climate summary pending'} />
-          )}
-        </ResearchCard>
-
-        {/* 4. Satellite Insights */}
-        <ResearchCard
-          icon={Satellite}
-          title="SYS.SAT//REMOTE_SENSING"
-          subtitle="Remote sensing data"
-          loading={loading}
-        >
-          {researchData?.satellite?.available ? (
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">Rainfall Avg</span>
-                <span className="text-sm font-bold text-[var(--cream)]">
-                  {formatMetric(researchData.satellite.averageDailyPrecipitationMm, 2)} mm/day
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">Temp Avg</span>
-                <span className="text-sm font-bold text-[var(--cream)]">
-                  {formatMetric(researchData.satellite.averageTemperatureC, 1)}°C
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">Solar Flux</span>
-                <span className="text-sm font-bold text-[var(--cream)]">
-                  {formatMetric(researchData.satellite.solarRadiationKwhm2Day, 2)} kWh/m²/day
-                </span>
-              </div>
-              <p className="text-xs text-[var(--cream)]/40 mt-2">Source: {researchData.satellite.dataSource} · {researchData.satellite.period}</p>
-            </div>
-          ) : (
-            <DataUnavailable message={researchData?.satellite?.message || 'Satellite telemetry pending'} />
-          )}
-        </ResearchCard>
-
-        {/* 5. Carbon Intensity */}
-        <ResearchCard
-          icon={Zap}
-          title="SYS.CARBON//ECO_AWARENESS"
-          subtitle="Regional carbon intensity"
-          loading={loading}
-        >
-          {researchData?.carbon?.available ? (
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">Carbon Intensity</span>
-                <span className="text-sm font-bold text-[var(--cream)]">
-                  {researchData.carbon.intensity} {researchData.carbon.unit}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">Index</span>
-                <span className={`text-sm font-bold ${
-                  researchData.carbon.index === 'low' ? 'text-green-300' :
-                  researchData.carbon.index === 'moderate' ? 'text-orange-300' :
-                  'text-rose-300'
-                }`}>
-                  {researchData.carbon.index?.toUpperCase() || 'MODERATE'}
-                </span>
-              </div>
-              <p className="text-xs text-[var(--cream)]/40 mt-2">
-                {researchData.carbon.note || `Region: ${researchData.carbon.region}`}
-              </p>
-            </div>
-          ) : (
-            <DataUnavailable />
-          )}
-        </ResearchCard>
-
-        {/* 6. Weather History */}
-        <ResearchCard
-          icon={CloudRain}
-          title="SYS.WEATHER//HISTORY_BUFFER"
-          subtitle="Historical vs. current patterns"
-          loading={loading}
-        >
-          {researchData?.weather?.available ? (
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">Current Temp</span>
-                <span className="text-sm font-bold text-[var(--cream)]">
-                  {researchData.weather.current.temperature}°C
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">30-Day Avg</span>
-                <span className="text-sm font-bold text-[var(--cream)]">
-                  {researchData.weather.historical30Days.temperature?.toFixed(1)}°C
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                {researchData.weather.trend.temperature === 'warming' ? (
-                  <TrendingUp size={14} className="text-rose-300" />
-                ) : (
-                  <TrendingDown size={14} className="text-blue-300" />
-                )}
-                <span className="text-xs text-[var(--cream)]/60">
-                  {researchData.weather.trend.temperature === 'warming' ? 'Warming trend' : 'Cooling trend'}
-                </span>
-              </div>
-              <p className="text-xs text-[var(--cream)]/40 mt-2">Source: Open Meteo</p>
-            </div>
-          ) : (
-            <DataUnavailable />
-          )}
-        </ResearchCard>
-
-        {/* 7. Biodiversity */}
         <ResearchCard
           icon={Leaf}
-          title="SYS.BIO//DIVERSITY_METRICS"
-          subtitle="Local species richness"
+          title="SYS.ECO"
+          subtitle="Biodiversity and ecosystem pressure around the observation area"
+          summary="This module explains whether the surrounding region looks species-rich, stressed, carbon-heavy, or relatively stable."
+          badge={ecoAvailable ? (researchData?.carbon?.estimated ? 'estimated' : 'live') : 'limited'}
           loading={loading}
         >
-          {researchData?.biodiversity?.available ? (
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">Species Records</span>
-                <span className="text-sm font-bold text-[var(--cream)]">
-                  {researchData.biodiversity.speciesCount.toLocaleString()}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">Richness</span>
-                <span className={`text-sm font-bold ${
-                  researchData.biodiversity.richness === 'high' ? 'text-green-300' :
-                  researchData.biodiversity.richness === 'moderate' ? 'text-orange-300' :
-                  'text-rose-300'
-                }`}>
-                  {researchData.biodiversity.richness.toUpperCase()}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">Search Radius</span>
-                <span className="text-sm font-bold text-[var(--cream)]">
-                  {researchData.biodiversity.radius}
-                </span>
-              </div>
-              <p className="text-xs text-[var(--cream)]/40 mt-2">Source: GBIF</p>
+          {ecoAvailable ? (
+            <div className="space-y-3">
+              <InsightRow
+                icon={Leaf}
+                label="Biodiversity density"
+                value={researchData?.biodiversity?.available
+                  ? `${researchData.biodiversity.speciesCount?.toLocaleString()} species records in range`
+                  : getMessage(researchData?.biodiversity, 'Biodiversity context currently unavailable')}
+                detail={researchData?.biodiversity?.available
+                  ? `Richness ${researchData.biodiversity.richness} · Search radius ${researchData.biodiversity.radius}`
+                  : 'GBIF occurrence records provide a proxy for surrounding biological richness.'}
+                tone={biodiversityTone}
+              />
+              <InsightRow
+                icon={TreePine}
+                label="Forest pressure"
+                value={researchData?.deforestation?.available
+                  ? `${formatMetric(researchData.deforestation.totalLoss, 0)} ha tree cover loss`
+                  : getMessage(researchData?.deforestation, 'Forest pressure currently unavailable')}
+                detail={researchData?.deforestation?.available
+                  ? `${researchData.deforestation.period} · ${researchData.deforestation.severity} impact`
+                  : 'Tree-cover change helps explain habitat pressure around the result location.'}
+                tone={forestTone}
+              />
+              <InsightRow
+                icon={Zap}
+                label="Carbon intensity"
+                value={researchData?.carbon?.available
+                  ? `${formatMetricWithUnit(researchData.carbon.intensity, researchData.carbon.unit, 0, 'Regional estimate unavailable')}${researchData?.carbon?.estimated ? ' estimated' : ''}`
+                  : getMessage(researchData?.carbon, 'Carbon context currently unavailable')}
+                detail={researchData?.carbon?.available
+                  ? researchData.carbon.note || `Regional index ${researchData.carbon.index || 'moderate'} · ${researchData.carbon.region}`
+                  : 'Electricity carbon intensity is a rough regional sustainability signal.'}
+                tone={carbonTone}
+              />
+              <InsightRow
+                icon={Satellite}
+                label="Sunlight budget"
+                value={researchData?.satellite?.available
+                  ? formatMetricWithUnit(researchData.satellite.solarRadiationKwhm2Day, 'kWh/m²/day', 2, 'Solar radiation unavailable')
+                  : getMessage(researchData?.satellite, 'Solar radiation context currently unavailable')}
+                detail={researchData?.satellite?.available
+                  ? `Average temperature ${formatMetricWithUnit(researchData.satellite.averageTemperatureC, '°C', 1, 'unavailable')} · Rain ${formatMetricWithUnit(researchData.satellite.averageDailyPrecipitationMm, 'mm/day', 2, 'unavailable')}`
+                  : 'Satellite sunlight estimates help explain photosynthetic opportunity.'}
+                tone="good"
+              />
             </div>
           ) : (
-            <DataUnavailable />
+            <DataUnavailable message="Ecosystem context is currently unavailable for this region." />
           )}
         </ResearchCard>
 
         <ResearchCard
           icon={FlaskConical}
-          title="SYS.SOIL//SOILGRIDS_PROFILE"
-          subtitle="Surface soil chemistry and texture"
+          title="SYS.SOIL"
+          subtitle="Surface soil chemistry and texture likely to influence root conditions"
+          summary="This module turns SoilGrids readings into a simple view of acidity, texture, and carbon at shallow depth."
+          badge={soilAvailable ? 'live' : 'limited'}
           loading={loading}
         >
-          {researchData?.soil?.available ? (
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">pH (H₂O)</span>
-                <span className="text-sm font-bold text-[var(--cream)]">
-                  {formatMetric(researchData.soil.ph, 1)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">Texture</span>
-                <span className="text-sm font-bold text-[var(--cream)]">
-                  {researchData.soil.dominantTexture || '—'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">Organic Carbon</span>
-                <span className="text-sm font-bold text-[var(--cream)]">
-                  {formatMetric(researchData.soil.organicCarbon, 1)} {researchData.soil.carbonUnit || ''}
-                </span>
-              </div>
-              <p className="text-xs text-[var(--cream)]/45 mt-2">
-                Clay/Sand/Silt: {formatMetric(researchData.soil.clay, 0)} / {formatMetric(researchData.soil.sand, 0)} / {formatMetric(researchData.soil.silt, 0)} {researchData.soil.clayUnit || ''}
-              </p>
-              <p className="text-xs text-[var(--cream)]/40 mt-2">Source: {researchData.soil.source} · Depth: {researchData.soil.sampleDepth}</p>
+          {soilAvailable ? (
+            <div className="space-y-3">
+              <InsightRow
+                icon={FlaskConical}
+                label="Soil acidity"
+                value={`pH ${formatMetric(researchData.soil.ph, 1)}`}
+                detail={`Sample depth ${researchData.soil.sampleDepth || '0-5cm'} · Source ${researchData.soil.source}`}
+                tone={Number(researchData?.soil?.ph) >= 6 && Number(researchData?.soil?.ph) <= 7.5 ? 'good' : 'moderate'}
+              />
+              <InsightRow
+                icon={Leaf}
+                label="Dominant texture"
+                value={researchData.soil.dominantTexture || 'Texture currently unavailable'}
+                detail="Texture influences drainage speed, root aeration, and water holding behavior."
+              />
+              <InsightRow
+                icon={Zap}
+                label="Organic carbon"
+                value={formatMetricWithUnit(researchData.soil.organicCarbon, researchData.soil.carbonUnit, 1, 'Organic carbon currently unavailable')}
+                detail="Higher organic carbon often supports nutrient retention and soil structure."
+                tone={Number(researchData?.soil?.organicCarbon) > 20 ? 'good' : 'neutral'}
+              />
+              <InsightRow
+                icon={CloudRain}
+                label="Particle balance"
+                value={`Clay ${formatMetricWithUnit(researchData.soil.clay, '', 0, '—')} · Sand ${formatMetricWithUnit(researchData.soil.sand, '', 0, '—')} · Silt ${formatMetricWithUnit(researchData.soil.silt, '', 0, '—')}`}
+                detail={researchData.soil.clayUnit || 'Percent-like mapped units'}
+              />
             </div>
           ) : (
-            <DataUnavailable message={researchData?.soil?.message || 'Soil profile pending'} />
-          )}
-        </ResearchCard>
-
-        <ResearchCard
-          icon={Sun}
-          title="SYS.SOLAR//DAYLIGHT_WINDOW"
-          subtitle="Sunrise, sunset, and twilight timing"
-          loading={loading}
-        >
-          {researchData?.solar?.available ? (
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">Sunrise</span>
-                <span className="text-sm font-bold text-[var(--cream)]">
-                  {researchData.solar.sunriseLocal || '—'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">Sunset</span>
-                <span className="text-sm font-bold text-[var(--cream)]">
-                  {researchData.solar.sunsetLocal || '—'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">Solar Noon</span>
-                <span className="text-sm font-bold text-[var(--cream)]">
-                  {researchData.solar.solarNoonLocal || '—'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--cream)]/60">Day Length</span>
-                <span className="text-sm font-bold text-[var(--cream)]">
-                  {researchData.solar.dayLength || '—'}
-                </span>
-              </div>
-              <p className="text-xs text-[var(--cream)]/40 mt-2">Source: {researchData.solar.source}</p>
-            </div>
-          ) : (
-            <DataUnavailable message={researchData?.solar?.message || 'Solar window pending'} />
+            <DataUnavailable message={getMessage(researchData?.soil, 'Soil profile currently unavailable for this location.')} />
           )}
         </ResearchCard>
       </div>
 
-      {/* Research Footer */}
       <div className="bg-white/5 rounded-xl p-4 border border-[#00FF41]/10">
         <div className="flex items-start gap-3">
           <Database size={16} className="text-[#00FF41] flex-shrink-0 mt-0.5" />
@@ -462,10 +437,7 @@ export const ResearchDataCards = () => {
               SYS.DB//RESEARCH_DATA_SOURCES
             </p>
             <p className="text-xs text-[var(--cream)]/50 leading-relaxed">
-              Environmental data aggregated from OpenAQ, Global Forest Watch, NASA POWER, 
-              Carbon Intensity API, Open Meteo, GBIF, SoilGrids, Sunrise-Sunset, and Nominatim. 
-              Data is cached for 24 hours and updated automatically. Location-based queries use your device's 
-              geolocation with fallback to regional estimates.
+              Environmental context is aggregated from OpenAQ, Global Forest Watch, NASA POWER, Carbon Intensity, Open-Meteo, GBIF, SoilGrids, Sunrise-Sunset, and Nominatim. Data is cached for 24 hours. When a live source is missing, the interface shows a plain-language fallback instead of raw technical errors.
             </p>
           </div>
         </div>

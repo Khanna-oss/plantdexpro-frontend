@@ -72,6 +72,8 @@ const extractSeries = (series) => {
 };
 
 const buildClimateSummary = (satellite, weather) => {
+  const hasSatellite = satellite?.available === true;
+  const hasWeather = weather?.available === true;
   const averageTemperatureC = satellite?.averageTemperatureC ?? weather?.historical30Days?.temperature ?? null;
   const averageDailyPrecipitationMm = satellite?.averageDailyPrecipitationMm ?? weather?.historical30Days?.precipitation ?? null;
   const currentTemperatureC = weather?.current?.temperature ?? null;
@@ -81,7 +83,7 @@ const buildClimateSummary = (satellite, weather) => {
       : null;
 
   if (!Number.isFinite(averageTemperatureC) && !Number.isFinite(averageDailyPrecipitationMm) && !Number.isFinite(currentTemperatureC)) {
-    return { available: false, message: 'Climate summary unavailable for this region' };
+    return buildUnavailable('NASA POWER + Open-Meteo', 'Regional climate summary is currently unavailable.');
   }
 
   return {
@@ -92,6 +94,11 @@ const buildClimateSummary = (satellite, weather) => {
     solarRadiationKwhm2Day: satellite?.solarRadiationKwhm2Day ?? null,
     dataWindow: satellite?.period || 'Recent observation window',
     source: 'NASA POWER + Open-Meteo',
+    note: hasSatellite && hasWeather
+      ? 'Combined from NASA POWER seasonal baselines and Open-Meteo live weather.'
+      : hasSatellite
+      ? 'Using NASA POWER seasonal baselines because live weather comparison is unavailable.'
+      : 'Using Open-Meteo weather history because satellite climatology is unavailable.',
     available: true
   };
 };
@@ -146,6 +153,30 @@ const formatSolarClock = (isoString) => {
   }
 };
 
+const buildUnavailable = (source, message, extra = {}) => ({
+  available: false,
+  source,
+  message,
+  ...extra,
+});
+
+const buildAirMeasurement = (results, sensorLookup, parameterName) => {
+  const reading = results.find((entry) => sensorLookup.get(entry?.sensorsId)?.name === parameterName);
+  if (!reading) {
+    return null;
+  }
+
+  const sensor = sensorLookup.get(reading.sensorsId) || {};
+  const numericValue = Number(reading.value);
+
+  return {
+    value: Number.isFinite(numericValue) ? numericValue : null,
+    unit: sensor.units || null,
+    displayName: sensor.displayName || parameterName,
+    lastUpdated: reading?.datetime?.utc || reading?.datetime?.local || null,
+  };
+};
+
 /**
  * 1. OpenAQ API - Air Quality Data
  * Free API, no key required
@@ -156,47 +187,67 @@ export const getAirQualityData = async (latitude, longitude) => {
   if (cached) return cached;
 
   try {
-    // OpenAQ v2 API - get nearest measurements
-    const response = await fetch(
-      `https://api.openaq.org/v2/latest?coordinates=${latitude},${longitude}&radius=50000&limit=1`,
-      {
-        headers: {
-          'Accept': 'application/json'
-        }
-      }
+    const locationResponse = await fetch(
+      `https://api.openaq.org/v3/locations?coordinates=${latitude},${longitude}&radius=25000&limit=1`
     );
 
-    if (!response.ok) throw new Error('OpenAQ API error');
-
-    const data = await response.json();
-    
-    if (data.results && data.results.length > 0) {
-      const measurements = data.results[0].measurements || [];
-      const pm25 = measurements.find(m => m.parameter === 'pm25');
-      const co2 = measurements.find(m => m.parameter === 'co2');
-      const o3 = measurements.find(m => m.parameter === 'o3');
-      const no2 = measurements.find(m => m.parameter === 'no2');
-
-      const result = {
-        location: data.results[0].location,
-        city: data.results[0].city,
-        country: data.results[0].country,
-        pm25: pm25 ? { value: pm25.value, unit: pm25.unit, lastUpdated: pm25.lastUpdated } : null,
-        co2: co2 ? { value: co2.value, unit: co2.unit } : null,
-        o3: o3 ? { value: o3.value, unit: o3.unit } : null,
-        no2: no2 ? { value: no2.value, unit: no2.unit } : null,
-        coordinates: data.results[0].coordinates,
-        available: true
-      };
-
-      setCache(cacheKey, result);
-      return result;
+    if (!locationResponse.ok) {
+      throw new Error('OpenAQ locations lookup failed');
     }
 
-    return { available: false, message: 'No air quality data available for this region' };
+    const locationData = await locationResponse.json();
+    const location = Array.isArray(locationData?.results) ? locationData.results[0] : null;
+
+    if (!location?.id) {
+      return buildUnavailable('OpenAQ v3', 'No air quality monitoring station was found near this observation area.');
+    }
+
+    const latestResponse = await fetch(`https://api.openaq.org/v3/locations/${location.id}/latest?limit=100`);
+
+    if (!latestResponse.ok) {
+      throw new Error('OpenAQ latest measurements lookup failed');
+    }
+
+    const latestData = await latestResponse.json();
+    const latestResults = Array.isArray(latestData?.results) ? latestData.results : [];
+    const sensorLookup = new Map(
+      (Array.isArray(location?.sensors) ? location.sensors : []).map((sensor) => [
+        sensor.id,
+        {
+          name: sensor?.parameter?.name || null,
+          units: sensor?.parameter?.units || null,
+          displayName: sensor?.parameter?.displayName || null,
+        },
+      ])
+    );
+
+    const result = {
+      location: location.name || location.locality || 'Nearest monitoring station',
+      city: location.locality || location.name || null,
+      country: location.country?.name || null,
+      provider: location.provider?.name || 'OpenAQ',
+      pm25: buildAirMeasurement(latestResults, sensorLookup, 'pm25'),
+      co2: buildAirMeasurement(latestResults, sensorLookup, 'co2'),
+      o3: buildAirMeasurement(latestResults, sensorLookup, 'o3'),
+      no2: buildAirMeasurement(latestResults, sensorLookup, 'no2'),
+      coordinates: location.coordinates || latestResults[0]?.coordinates || null,
+      source: 'OpenAQ v3',
+      available: false,
+    };
+
+    result.available = Boolean(result.pm25 || result.co2 || result.o3 || result.no2);
+
+    if (!result.available) {
+      return buildUnavailable('OpenAQ v3', 'No recent air quality readings are available near this observation area.', {
+        location: result.location,
+      });
+    }
+
+    setCache(cacheKey, result);
+    return result;
   } catch (error) {
     console.error('OpenAQ error:', error);
-    return { available: false, error: error.message };
+    return buildUnavailable('OpenAQ v3', 'Air quality data is currently unavailable for this region.');
   }
 };
 
@@ -218,7 +269,7 @@ export const getDeforestationData = async (latitude, longitude) => {
     if (!response.ok) throw new Error('GFW API error');
 
     const data = await response.json();
-    
+
     const result = {
       totalLoss: data.data?.[0]?.total_loss || 0,
       unit: 'hectares',
@@ -231,7 +282,7 @@ export const getDeforestationData = async (latitude, longitude) => {
     return result;
   } catch (error) {
     console.error('GFW error:', error);
-    return { available: false, error: error.message };
+    return buildUnavailable('Global Forest Watch', 'Forest-cover change data is currently unavailable for this region.');
   }
 };
 
@@ -256,7 +307,7 @@ export const getClimateData = async (latitude, longitude) => {
     return result;
   } catch (error) {
     console.error('Climate summary error:', error);
-    return { available: false, error: error.message };
+    return buildUnavailable('NASA POWER + Open-Meteo', 'Regional climate summary is currently unavailable.');
   }
 };
 
@@ -274,7 +325,7 @@ export const getSatelliteData = async (latitude, longitude) => {
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - 3);
     const endDate = new Date();
-    
+
     const start = startDate.toISOString().split('T')[0].replace(/-/g, '');
     const end = endDate.toISOString().split('T')[0].replace(/-/g, '');
 
@@ -288,7 +339,7 @@ export const getSatelliteData = async (latitude, longitude) => {
     const precipitationSeries = extractSeries(data.properties?.parameter?.PRECTOTCORR);
     const temperatureSeries = extractSeries(data.properties?.parameter?.T2M);
     const solarSeries = extractSeries(data.properties?.parameter?.ALLSKY_SFC_SW_DWN);
-    
+
     const result = {
       averageDailyPrecipitationMm: roundTo(getAverage(precipitationSeries), 2),
       averageTemperatureC: roundTo(getAverage(temperatureSeries), 1),
@@ -302,14 +353,14 @@ export const getSatelliteData = async (latitude, longitude) => {
     };
 
     if (!result.available) {
-      return { available: false, message: 'NASA POWER returned no satellite climate values for this region' };
+      return buildUnavailable('NASA POWER', 'Satellite climate values are currently unavailable for this region.');
     }
 
     setCache(cacheKey, result);
     return result;
   } catch (error) {
     console.error('NASA POWER error:', error);
-    return { available: false, error: error.message };
+    return buildUnavailable('NASA POWER', 'Satellite climate data is currently unavailable for this region.');
   }
 };
 
@@ -326,22 +377,23 @@ export const getCarbonIntensityData = async (latitude, longitude) => {
     // For UK coordinates, use Carbon Intensity API
     // For other regions, provide estimated data
     const locationData = await geolocationService.getLocationName(latitude, longitude);
-    
+
     if (locationData.country === 'United Kingdom') {
       const response = await fetch('https://api.carbonintensity.org.uk/intensity');
-      
+
       if (response.ok) {
         const data = await response.json();
         const current = data.data?.[0];
-        
+
         const result = {
           intensity: current?.intensity?.actual || current?.intensity?.forecast,
           unit: 'gCO2/kWh',
           index: current?.intensity?.index,
           region: 'UK',
+          source: 'Carbon Intensity API',
           available: true
         };
-        
+
         setCache(cacheKey, result);
         return result;
       }
@@ -354,6 +406,8 @@ export const getCarbonIntensityData = async (latitude, longitude) => {
       index: 'moderate',
       region: locationData.country,
       available: true,
+      estimated: true,
+      source: 'Carbon Intensity API',
       note: 'Global average carbon intensity estimate'
     };
 
@@ -361,7 +415,7 @@ export const getCarbonIntensityData = async (latitude, longitude) => {
     return result;
   } catch (error) {
     console.error('Carbon Intensity error:', error);
-    return { available: false, error: error.message };
+    return buildUnavailable('Carbon Intensity API', 'Carbon intensity context is currently unavailable for this region.');
   }
 };
 
@@ -397,29 +451,46 @@ export const getWeatherHistoryData = async (latitude, longitude) => {
     const currentData = await currentResponse.json();
     const historicalData = await historicalResponse.json();
 
+    const currentTemperature = Number(currentData.current?.temperature_2m);
+    const currentPrecipitation = Number(currentData.current?.precipitation);
+    const currentWindSpeed = Number(currentData.current?.wind_speed_10m);
+    const historicalTemperature = Number(historicalData.daily?.temperature_2m_mean?.[0]);
+    const historicalPrecipitation = Number(historicalData.daily?.precipitation_sum?.[0]);
+    const hasCurrentData = [currentTemperature, currentPrecipitation, currentWindSpeed].some((value) => Number.isFinite(value));
+    const hasHistoricalData = [historicalTemperature, historicalPrecipitation].some((value) => Number.isFinite(value));
+
     const result = {
       current: {
-        temperature: currentData.current?.temperature_2m,
-        precipitation: currentData.current?.precipitation,
-        windSpeed: currentData.current?.wind_speed_10m,
+        temperature: Number.isFinite(currentTemperature) ? currentTemperature : null,
+        precipitation: Number.isFinite(currentPrecipitation) ? currentPrecipitation : null,
+        windSpeed: Number.isFinite(currentWindSpeed) ? currentWindSpeed : null,
         unit: currentData.current_units
       },
       historical30Days: {
-        temperature: historicalData.daily?.temperature_2m_mean?.[0],
-        precipitation: historicalData.daily?.precipitation_sum?.[0]
+        temperature: Number.isFinite(historicalTemperature) ? historicalTemperature : null,
+        precipitation: Number.isFinite(historicalPrecipitation) ? historicalPrecipitation : null
       },
       trend: {
-        temperature: currentData.current?.temperature_2m > (historicalData.daily?.temperature_2m_mean?.[0] || 0) ? 'warming' : 'cooling',
-        precipitation: currentData.current?.precipitation > (historicalData.daily?.precipitation_sum?.[0] || 0) ? 'increasing' : 'decreasing'
+        temperature: Number.isFinite(currentTemperature) && Number.isFinite(historicalTemperature)
+          ? currentTemperature > historicalTemperature ? 'warming' : 'cooling'
+          : null,
+        precipitation: Number.isFinite(currentPrecipitation) && Number.isFinite(historicalPrecipitation)
+          ? currentPrecipitation > historicalPrecipitation ? 'increasing' : 'decreasing'
+          : null
       },
-      available: true
+      source: 'Open-Meteo',
+      available: hasCurrentData || hasHistoricalData
     };
+
+    if (!result.available) {
+      return buildUnavailable('Open-Meteo', 'Weather history is currently unavailable for this region.');
+    }
 
     setCache(cacheKey, result);
     return result;
   } catch (error) {
     console.error('Open Meteo error:', error);
-    return { available: false, error: error.message };
+    return buildUnavailable('Open-Meteo', 'Weather history is currently unavailable for this region.');
   }
 };
 
@@ -455,7 +526,7 @@ export const getBiodiversityData = async (latitude, longitude) => {
     return result;
   } catch (error) {
     console.error('GBIF error:', error);
-    return { available: false, error: error.message };
+    return buildUnavailable('GBIF', 'Biodiversity context is currently unavailable for this region.');
   }
 };
 
@@ -481,7 +552,7 @@ export const getSoilData = async (latitude, longitude) => {
     const layers = feature?.properties?.layers || data?.properties?.layers || data?.layers || [];
 
     if (!Array.isArray(layers) || layers.length === 0) {
-      return { available: false, message: 'No SoilGrids data available for this region' };
+      return buildUnavailable('SoilGrids', 'Soil profile data is currently unavailable for this region.');
     }
 
     const clayLayer = findSoilLayer(layers, 'clay');
@@ -518,14 +589,14 @@ export const getSoilData = async (latitude, longitude) => {
     };
 
     if (!result.available) {
-      return { available: false, message: 'No SoilGrids values available for this region' };
+      return buildUnavailable('SoilGrids', 'Soil profile values are currently unavailable for this region.');
     }
 
     setCache(cacheKey, result);
     return result;
   } catch (error) {
     console.error('SoilGrids error:', error);
-    return { available: false, error: error.message };
+    return buildUnavailable('SoilGrids', 'Soil profile data is currently unavailable for this region.');
   }
 };
 
@@ -544,7 +615,7 @@ export const getSolarData = async (latitude, longitude) => {
     const data = await response.json();
 
     if (data?.status !== 'OK' || !data?.results) {
-      return { available: false, message: 'No solar timing data available for this region' };
+      return buildUnavailable('Sunrise-Sunset.org', 'Daylight timing is currently unavailable for this region.');
     }
 
     const result = {
@@ -565,7 +636,7 @@ export const getSolarData = async (latitude, longitude) => {
     return result;
   } catch (error) {
     console.error('Sunrise-Sunset error:', error);
-    return { available: false, error: error.message };
+    return buildUnavailable('Sunrise-Sunset.org', 'Daylight timing is currently unavailable for this region.');
   }
 };
 
@@ -594,19 +665,23 @@ export const getAllResearchData = async (latitude, longitude) => {
       getSolarData(latitude, longitude)
     ]);
 
-    const satelliteValue = satellite.status === 'fulfilled' ? satellite.value : { available: false };
-    const weatherValue = weather.status === 'fulfilled' ? weather.value : { available: false };
+    const satelliteValue = satellite.status === 'fulfilled'
+      ? satellite.value
+      : buildUnavailable('NASA POWER', 'Satellite climate data is currently unavailable for this region.');
+    const weatherValue = weather.status === 'fulfilled'
+      ? weather.value
+      : buildUnavailable('Open-Meteo', 'Weather history is currently unavailable for this region.');
 
     return {
-      airQuality: airQuality.status === 'fulfilled' ? airQuality.value : { available: false },
-      deforestation: deforestation.status === 'fulfilled' ? deforestation.value : { available: false },
+      airQuality: airQuality.status === 'fulfilled' ? airQuality.value : buildUnavailable('OpenAQ v3', 'Air quality data is currently unavailable for this region.'),
+      deforestation: deforestation.status === 'fulfilled' ? deforestation.value : buildUnavailable('Global Forest Watch', 'Forest-cover change data is currently unavailable for this region.'),
       climate: buildClimateSummary(satelliteValue, weatherValue),
       satellite: satelliteValue,
-      carbon: carbon.status === 'fulfilled' ? carbon.value : { available: false },
+      carbon: carbon.status === 'fulfilled' ? carbon.value : buildUnavailable('Carbon Intensity API', 'Carbon intensity context is currently unavailable for this region.'),
       weather: weatherValue,
-      biodiversity: biodiversity.status === 'fulfilled' ? biodiversity.value : { available: false },
-      soil: soil.status === 'fulfilled' ? soil.value : { available: false },
-      solar: solar.status === 'fulfilled' ? solar.value : { available: false }
+      biodiversity: biodiversity.status === 'fulfilled' ? biodiversity.value : buildUnavailable('GBIF', 'Biodiversity context is currently unavailable for this region.'),
+      soil: soil.status === 'fulfilled' ? soil.value : buildUnavailable('SoilGrids', 'Soil profile data is currently unavailable for this region.'),
+      solar: solar.status === 'fulfilled' ? solar.value : buildUnavailable('Sunrise-Sunset.org', 'Daylight timing is currently unavailable for this region.')
     };
   } catch (error) {
     console.error('Research data fetch error:', error);

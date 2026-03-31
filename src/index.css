@@ -291,6 +291,59 @@ h3,
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
 }
 
+.command-center-globe-shell {
+  width: 256px;
+  height: 256px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 255, 65, 0.18);
+  background:
+    radial-gradient(circle at 35% 30%, rgba(0, 255, 65, 0.14), transparent 32%),
+    radial-gradient(circle at 50% 50%, rgba(4, 8, 6, 0.98), rgba(0, 0, 0, 0.92));
+  box-shadow:
+    inset 0 0 36px rgba(0, 255, 65, 0.08),
+    0 0 0 1px rgba(0, 255, 65, 0.06),
+    0 18px 44px rgba(0, 0, 0, 0.34);
+}
+
+.command-center-globe-shell canvas {
+  width: 256px !important;
+  height: 256px !important;
+}
+
+.command-center-globe-fallback {
+  width: 220px;
+  height: 220px;
+  border-radius: 999px;
+  position: relative;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(0, 255, 65, 0.18), transparent 28%),
+    radial-gradient(circle at 50% 55%, rgba(14, 40, 24, 0.92), rgba(2, 6, 4, 0.96));
+  border: 1px solid rgba(0, 255, 65, 0.16);
+}
+
+.command-center-globe-fallback-orbit {
+  position: absolute;
+  inset: 16px;
+  border-radius: 999px;
+  border: 1px dashed rgba(0, 255, 65, 0.2);
+}
+
+@media (max-width: 640px) {
+  .command-center-globe-shell {
+    width: 224px;
+    height: 224px;
+  }
+
+  .command-center-globe-shell canvas {
+    width: 224px !important;
+    height: 224px !important;
+  }
+}
+
 @keyframes scan-line {
   0%   { transform: translateY(-100%); }
   100% { transform: translateY(350%); }

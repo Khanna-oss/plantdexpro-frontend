@@ -84,11 +84,13 @@ const App = () => {
     setInferenceMessage('');
   }, [clearInferenceTimers]);
 
-  const hasIdentificationResult = results.some(
+  const identificationResult = results.find(
     (plant) => Boolean(plant?.scientificName || plant?.commonName)
-  );
+  ) || null;
+  const isAnalyzing = isLoading || Boolean(inferenceMessage);
+  const resultReady = Boolean(identificationResult) && !error && !isAnalyzing;
   const shouldShowEnvironmentalHud =
-    hasIdentificationResult && !isLoading && !error && !inferenceMessage;
+    Boolean(identificationResult) && isAnalyzing === false && resultReady === true;
 
   return (
     <div className={`min-h-screen flex flex-col relative transition-colors duration-500 ${theme}`}>
@@ -243,7 +245,7 @@ const App = () => {
             <div className="flex items-center gap-3 mb-5 text-[var(--golden-soil)]/80 uppercase text-[9px] font-black tracking-[0.35em]">
               <Leaf size={14} /> Environmental Intelligence
             </div>
-            <GlobeEnvironmental />
+            <GlobeEnvironmental plant={identificationResult} />
             <div className="mt-6">
               <ResearchDataCards />
             </div>

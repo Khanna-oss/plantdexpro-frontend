@@ -1,132 +1,80 @@
 /**
  * GlobeEnvironmental.jsx — Phase 5
- * Rotating canvas globe with 7 environmental metric chips.
- * Zero new dependencies — pure React + Canvas + Framer Motion.
+ * Rotating 3D globe with 7 environmental metric chips.
+ * Zero new dependencies — pure React + Three.js + Framer Motion.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Wind, TreePine, Thermometer, Zap, Leaf, CloudRain, Satellite, FlaskConical, Sun } from 'lucide-react';
+import * as THREE from 'three';
 import { geolocationService } from '../services/geolocationService.js';
 import { environmentalResearchService } from '../services/environmentalResearchService.js';
 
 const GLOBE_SIZE = 220;
-const GLOBE_R = 97;
+const Globe = React.lazy(() => import('react-globe.gl'));
+const EARTH_TEXTURE_URL = 'https://unpkg.com/three-globe/example/img/earth-night.jpg';
+const EARTH_BUMP_URL = 'https://unpkg.com/three-globe/example/img/earth-topology.png';
 
-function drawGlobe(ctx, rotAngle, lat, lon) {
-  const cx = GLOBE_SIZE / 2;
-  const cy = GLOBE_SIZE / 2;
-  const r = GLOBE_R;
-
-  ctx.clearRect(0, 0, GLOBE_SIZE, GLOBE_SIZE);
-
-  // Outer atmosphere glow
-  const atmGrad = ctx.createRadialGradient(cx, cy, r * 0.88, cx, cy, r * 1.22);
-  atmGrad.addColorStop(0, 'rgba(20,80,20,0)');
-  atmGrad.addColorStop(0.5, 'rgba(30,100,30,0.14)');
-  atmGrad.addColorStop(1, 'transparent');
-  ctx.beginPath();
-  ctx.arc(cx, cy, r * 1.2, 0, Math.PI * 2);
-  ctx.fillStyle = atmGrad;
-  ctx.fill();
-
-  // Sphere fill
-  const grad = ctx.createRadialGradient(cx - r * 0.28, cy - r * 0.3, r * 0.06, cx, cy, r);
-  grad.addColorStop(0, '#1e5229');
-  grad.addColorStop(0.38, '#0c1e0f');
-  grad.addColorStop(1, '#010503');
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fillStyle = grad;
-  ctx.fill();
-
-  // Clip to sphere for grid
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx, cy, r - 0.5, 0, Math.PI * 2);
-  ctx.clip();
-
-  // Latitude lines
-  [-60, -30, 0, 30, 60].forEach((latDeg) => {
-    const latRad = (latDeg * Math.PI) / 180;
-    const yPos = cy + r * Math.sin(latRad);
-    const xr = Math.abs(r * Math.cos(latRad));
-    ctx.beginPath();
-    ctx.ellipse(cx, yPos, xr, xr * 0.12, 0, 0, Math.PI * 2);
-    ctx.strokeStyle = latDeg === 0 ? 'rgba(0,255,65,0.22)' : 'rgba(0,255,65,0.1)';
-    ctx.lineWidth = latDeg === 0 ? 0.9 : 0.55;
-    ctx.stroke();
-  });
-
-  // Longitude lines (rotating)
-  for (let i = 0; i < 12; i++) {
-    const angleDeg = (i * 30 + rotAngle) % 360;
-    const angleRad = (angleDeg * Math.PI) / 180;
-    const cosA = Math.cos(angleRad);
-    const xScale = Math.abs(cosA);
-    if (xScale > 0.05) {
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, r * xScale, r, 0, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(0,255,65,${0.04 + xScale * 0.1})`;
-      ctx.lineWidth = 0.55;
-      ctx.stroke();
-    }
+const clampLatitude = (value) => Math.max(-85, Math.min(85, value));
+const normalizeLongitude = (value) => {
+  if (!Number.isFinite(value)) {
+    return 0;
   }
 
-  ctx.restore();
+  return ((value + 180) % 360 + 360) % 360 - 180;
+};
 
-  // User location pin
-  if (lat !== null && lon !== null) {
-    const lonAdjusted = ((lon + rotAngle) % 360);
-    const lonRad = (lonAdjusted * Math.PI) / 180;
-    const latRad = (lat * Math.PI) / 180;
-    const depth = Math.cos(lonRad);
-
-    if (depth > 0.1) {
-      const px = cx + r * Math.cos(latRad) * Math.sin(lonRad);
-      const py = cy - r * Math.sin(latRad);
-      const alpha = Math.min(1, depth);
-
-      const glowR = 15 * alpha;
-      const glowGrad = ctx.createRadialGradient(px, py, 0, px, py, glowR);
-      glowGrad.addColorStop(0, `rgba(0,255,65,${alpha * 0.9})`);
-      glowGrad.addColorStop(0.4, `rgba(0,255,65,${alpha * 0.3})`);
-      glowGrad.addColorStop(1, 'transparent');
-      ctx.beginPath();
-      ctx.arc(px, py, glowR, 0, Math.PI * 2);
-      ctx.fillStyle = glowGrad;
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.arc(px, py, 3.2 * alpha, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(0,255,65,${alpha})`;
-      ctx.fill();
-    }
+const summarizeRegions = (regions = []) => {
+  const validRegions = regions.filter(Boolean);
+  if (validRegions.length === 0) {
+    return null;
   }
 
-  // Specular highlight
-  const specGrad = ctx.createRadialGradient(cx - r * 0.36, cy - r * 0.36, 0, cx - r * 0.36, cy - r * 0.36, r * 0.5);
-  specGrad.addColorStop(0, 'rgba(255,255,255,0.045)');
-  specGrad.addColorStop(1, 'transparent');
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fillStyle = specGrad;
-  ctx.fill();
+  return validRegions.slice(0, 3).join(', ');
+};
 
-  // Edge shadow
-  const edgeGrad = ctx.createRadialGradient(cx, cy, r * 0.72, cx, cy, r);
-  edgeGrad.addColorStop(0, 'transparent');
-  edgeGrad.addColorStop(1, 'rgba(0,0,0,0.55)');
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fillStyle = edgeGrad;
-  ctx.fill();
-}
+const buildPlantGeoContext = (plant) => {
+  const nativeRegions = Array.isArray(plant?.trefleEnrichment?.distribution?.native)
+    ? plant.trefleEnrichment.distribution.native.filter(Boolean)
+    : [];
+  const introducedRegions = Array.isArray(plant?.trefleEnrichment?.distribution?.introduced)
+    ? plant.trefleEnrichment.distribution.introduced.filter(Boolean)
+    : [];
+  const habitat = plant?.habitat || plant?.botanicalData?.habitat || null;
+  const speciesLabel = plant?.commonName || plant?.scientificName || 'Identified species';
+  const nativeSummary = summarizeRegions(nativeRegions);
+
+  return {
+    speciesLabel,
+    habitat,
+    nativeRegions,
+    introducedRegions,
+    geographicContext: nativeSummary
+      ? `Native range signals: ${nativeSummary}`
+      : habitat
+      ? `Habitat signal: ${habitat}`
+      : 'Geographic context is anchored to the observation location.',
+  };
+};
+
+const getMetricMessage = (node, fallback = 'Unavailable') => node?.message || fallback;
+
+const formatMetricValue = (value, suffix = '', precision = 0) => {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return null;
+  }
+
+  return `${numericValue.toFixed(precision)}${suffix}`;
+};
 
 const MetricChip = ({ icon: Icon, label, value, status, loading }) => {
   const statusColor =
-    status === 'good' || status === 'low' || status === 'high'
+    status === 'good'
       ? '#86efac'
+      : status === 'alert'
+      ? '#fca5a5'
       : status === 'moderate'
       ? '#fcd34d'
       : status === 'warming'
@@ -154,38 +102,32 @@ const MetricChip = ({ icon: Icon, label, value, status, loading }) => {
   );
 };
 
-export const GlobeEnvironmental = () => {
-  const canvasRef = useRef(null);
-  const rotRef = useRef(0);
-  const rafRef = useRef(null);
-  const lastTimeRef = useRef(0);
+export const GlobeEnvironmental = ({ plant = null }) => {
+  const globeRef = useRef(null);
   const [location, setLocation] = useState(null);
   const [locationName, setLocationName] = useState(null);
   const [researchData, setResearchData] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-
-    const animate = (time) => {
-      if (time - lastTimeRef.current > 50) {
-        rotRef.current = (rotRef.current + 0.28) % 360;
-        drawGlobe(
-          ctx,
-          rotRef.current,
-          location?.latitude ?? null,
-          location?.longitude ?? null
-        );
-        lastTimeRef.current = time;
-      }
-      rafRef.current = requestAnimationFrame(animate);
-    };
-
-    rafRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [location]);
+  const plantContext = useMemo(() => buildPlantGeoContext(plant), [plant]);
+  const focusPoint = useMemo(() => ({
+    latitude: clampLatitude(Number(location?.latitude) || 28.6139),
+    longitude: normalizeLongitude(Number(location?.longitude) || 77.2090),
+  }), [location]);
+  const pointData = useMemo(() => ([{
+    lat: focusPoint.latitude,
+    lng: focusPoint.longitude,
+    color: '#00FF41',
+    altitude: 0.16,
+    radius: 0.68,
+  }]), [focusPoint.latitude, focusPoint.longitude]);
+  const labelData = useMemo(() => ([{
+    lat: focusPoint.latitude,
+    lng: focusPoint.longitude,
+    text: locationName?.city
+      ? `${locationName.city} · ${plantContext.speciesLabel}`
+      : `${plantContext.speciesLabel} · Observation zone`,
+    color: '#00FF41',
+  }]), [focusPoint.latitude, focusPoint.longitude, locationName, plantContext.speciesLabel]);
 
   useEffect(() => {
     const load = async () => {
@@ -208,86 +150,160 @@ export const GlobeEnvironmental = () => {
     load();
   }, []);
 
+  useEffect(() => {
+    if (!globeRef.current) {
+      return;
+    }
+
+    const controls = globeRef.current.controls?.();
+    if (controls) {
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 0.45;
+      controls.enablePan = false;
+      controls.minDistance = 220;
+      controls.maxDistance = 320;
+    }
+
+    const material = globeRef.current.globeMaterial?.();
+    if (material) {
+      material.color = new THREE.Color('#08120d');
+      material.emissive = new THREE.Color('#123b21');
+      material.emissiveIntensity = 0.55;
+      material.shininess = 18;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!globeRef.current) {
+      return;
+    }
+
+    globeRef.current.pointOfView(
+      {
+        lat: focusPoint.latitude,
+        lng: focusPoint.longitude,
+        altitude: 1.8,
+      },
+      1200
+    );
+  }, [focusPoint.latitude, focusPoint.longitude]);
+
   const metrics = [
+    {
+      icon: MapPin,
+      label: 'Plant Context',
+      value: plantContext.geographicContext,
+      status: plantContext.nativeRegions.length > 0 ? 'good' : 'moderate',
+    },
     {
       icon: Wind,
       label: 'Air Quality',
       value: researchData?.airQuality?.available
-        ? `PM2.5 · ${researchData.airQuality.pm25?.value?.toFixed(0) ?? '—'} μg/m³`
-        : 'Unavailable',
-      status:
-        (researchData?.airQuality?.pm25?.value ?? 999) < 35
-          ? 'good'
-          : 'moderate',
+        ? `PM2.5 · ${formatMetricValue(researchData.airQuality.pm25?.value, ' μg/m³', 0) || 'Reading limited'}`
+        : getMetricMessage(researchData?.airQuality, 'No nearby station'),
+      status: !researchData?.airQuality?.available
+        ? 'neutral'
+        : (researchData?.airQuality?.pm25?.value ?? 999) < 15
+        ? 'good'
+        : (researchData?.airQuality?.pm25?.value ?? 999) < 35
+        ? 'moderate'
+        : 'alert',
     },
     {
       icon: TreePine,
       label: 'Forest Cover',
       value: researchData?.deforestation?.available
         ? `${researchData.deforestation.severity?.toUpperCase()} Impact`
-        : 'Unavailable',
-      status: researchData?.deforestation?.severity ?? 'moderate',
+        : getMetricMessage(researchData?.deforestation, 'Forest data unavailable'),
+      status: researchData?.deforestation?.severity === 'high'
+        ? 'alert'
+        : researchData?.deforestation?.severity === 'moderate'
+        ? 'moderate'
+        : researchData?.deforestation?.severity === 'low'
+        ? 'good'
+        : 'neutral',
     },
     {
       icon: Thermometer,
       label: 'Temperature',
       value: researchData?.climate?.available
-        ? `${researchData.climate.currentTemperatureC ?? '—'}°C Current`
-        : 'Unavailable',
-      status:
-        !researchData?.climate?.available
-          ? 'moderate'
-          : Number(researchData?.climate?.deviationFromRecentAverageC) > 0
-          ? 'warming'
-          : 'cooling',
+        ? `${formatMetricValue(researchData.climate.currentTemperatureC, '°C', 1) || 'Live reading limited'} current`
+        : getMetricMessage(researchData?.climate, 'Climate baseline unavailable'),
+      status: !researchData?.climate?.available
+        ? 'neutral'
+        : Number(researchData?.climate?.deviationFromRecentAverageC) > 1
+        ? 'alert'
+        : Number(researchData?.climate?.deviationFromRecentAverageC) > 0
+        ? 'warming'
+        : Number(researchData?.climate?.deviationFromRecentAverageC) < -1
+        ? 'cooling'
+        : 'good',
     },
     {
       icon: Zap,
       label: 'Carbon',
       value: researchData?.carbon?.available
-        ? `${researchData.carbon.intensity} gCO₂/kWh`
-        : 'Unavailable',
-      status: researchData?.carbon?.index ?? 'moderate',
+        ? `${formatMetricValue(researchData.carbon.intensity, ' gCO₂/kWh', 0) || 'Regional estimate'}${researchData?.carbon?.estimated ? ' est.' : ''}`
+        : getMetricMessage(researchData?.carbon, 'Carbon context unavailable'),
+      status: !researchData?.carbon?.available
+        ? 'neutral'
+        : researchData?.carbon?.estimated
+        ? 'moderate'
+        : researchData?.carbon?.index === 'low'
+        ? 'good'
+        : researchData?.carbon?.index === 'high'
+        ? 'alert'
+        : 'moderate',
     },
     {
       icon: Leaf,
       label: 'Biodiversity',
       value: researchData?.biodiversity?.available
         ? `${researchData.biodiversity.speciesCount?.toLocaleString()} spp`
-        : 'Unavailable',
-      status: researchData?.biodiversity?.richness ?? 'moderate',
+        : getMetricMessage(researchData?.biodiversity, 'Biodiversity context unavailable'),
+      status: researchData?.biodiversity?.richness === 'high'
+        ? 'good'
+        : researchData?.biodiversity?.richness === 'moderate'
+        ? 'moderate'
+        : researchData?.biodiversity?.richness === 'low'
+        ? 'alert'
+        : 'neutral',
     },
     {
       icon: CloudRain,
       label: 'Precipitation',
       value: researchData?.satellite?.available
-        ? `${researchData.satellite.averageDailyPrecipitationMm ?? '—'} mm/day`
-        : 'Unavailable',
-      status: 'moderate',
+        ? `${formatMetricValue(researchData.satellite.averageDailyPrecipitationMm, ' mm/day', 2) || 'Seasonal average limited'}`
+        : getMetricMessage(researchData?.satellite, 'Satellite rain context unavailable'),
+      status: researchData?.satellite?.available ? 'moderate' : 'neutral',
     },
     {
       icon: Satellite,
       label: 'Solar Flux',
       value: researchData?.satellite?.available
-        ? `${researchData.satellite.solarRadiationKwhm2Day ?? '—'} kWh/m²`
-        : 'Unavailable',
-      status: 'good',
+        ? `${formatMetricValue(researchData.satellite.solarRadiationKwhm2Day, ' kWh/m²', 2) || 'Flux limited'}`
+        : getMetricMessage(researchData?.satellite, 'Solar flux unavailable'),
+      status: researchData?.satellite?.available ? 'good' : 'neutral',
     },
     {
       icon: FlaskConical,
       label: 'Soil pH',
       value: researchData?.soil?.available
-        ? `pH ${researchData.soil.ph ?? '—'} · ${researchData.soil.dominantTexture || 'Mixed'}`
-        : 'Unavailable',
-      status: 'moderate',
+        ? `${formatMetricValue(researchData.soil.ph, '', 1) ? `pH ${formatMetricValue(researchData.soil.ph, '', 1)}` : 'pH limited'} · ${researchData.soil.dominantTexture || 'Texture mixed'}`
+        : getMetricMessage(researchData?.soil, 'Soil profile unavailable'),
+      status: !researchData?.soil?.available
+        ? 'neutral'
+        : Number(researchData?.soil?.ph) >= 6 && Number(researchData?.soil?.ph) <= 7.5
+        ? 'good'
+        : 'moderate',
     },
     {
       icon: Sun,
       label: 'Daylight',
       value: researchData?.solar?.available
         ? researchData.solar.dayLength || 'Available'
-        : 'Unavailable',
-      status: 'good',
+        : getMetricMessage(researchData?.solar, 'Daylight timing unavailable'),
+      status: researchData?.solar?.available ? 'good' : 'neutral',
     },
   ];
 
@@ -326,16 +342,53 @@ export const GlobeEnvironmental = () => {
         {/* Globe + Metrics */}
         <div className="flex flex-col sm:flex-row items-center gap-6">
           {/* Globe canvas */}
-          <div className="relative flex-shrink-0 flex flex-col items-center">
-            <canvas
-              ref={canvasRef}
-              width={GLOBE_SIZE}
-              height={GLOBE_SIZE}
-              style={{ borderRadius: '50%' }}
-            />
+          <div className="relative flex-shrink-0 flex flex-col items-center w-full sm:w-auto">
+            <div className="command-center-globe-shell">
+              <React.Suspense
+                fallback={(
+                  <div className="command-center-globe-fallback animate-pulse-soft">
+                    <div className="command-center-globe-fallback-orbit" />
+                  </div>
+                )}
+              >
+                <Globe
+                  ref={globeRef}
+                  width={GLOBE_SIZE + 36}
+                  height={GLOBE_SIZE + 36}
+                  backgroundColor="rgba(0,0,0,0)"
+                  globeImageUrl={EARTH_TEXTURE_URL}
+                  bumpImageUrl={EARTH_BUMP_URL}
+                  showAtmosphere
+                  atmosphereColor="#00FF41"
+                  atmosphereAltitude={0.17}
+                  pointsData={pointData}
+                  pointLat="lat"
+                  pointLng="lng"
+                  pointColor="color"
+                  pointAltitude="altitude"
+                  pointRadius="radius"
+                  labelsData={labelData}
+                  labelLat="lat"
+                  labelLng="lng"
+                  labelText="text"
+                  labelColor="color"
+                  labelSize={() => 1.1}
+                  labelDotRadius={() => 0.32}
+                  labelAltitude={() => 0.08}
+                />
+              </React.Suspense>
+            </div>
             <p className="mt-2 text-[7px] font-black uppercase tracking-[0.3em] text-[var(--cream)]/18">
               EARTH · LIVE SYNC
             </p>
+            <div className="mt-3 w-full max-w-[280px] rounded-xl border border-white/8 bg-white/4 px-3 py-2 text-left">
+              <p className="text-[7px] font-black uppercase tracking-[0.24em] text-[#00FF41]/60 mb-1">
+                SPECIES GEO CONTEXT
+              </p>
+              <p className="text-[10px] font-semibold leading-relaxed text-[var(--cream)]/75">
+                {plantContext.geographicContext}
+              </p>
+            </div>
           </div>
 
           {/* Metric chips */}
